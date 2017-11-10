@@ -73,6 +73,8 @@ plot(subset, col="red", add=TRUE)
 total <- length(overlap) #5569 SPAs
 LUI_ext<-list()
 
+total<-1000
+
 pb <- txtProgressBar(min = 0, max = total, style = 3)
 
 for (i in 1:total){
@@ -83,10 +85,28 @@ for (i in 1:total){
 close(pb)
 
 
+
 # get rid of NAs
 LUI_clear<-list()
+
 for(j in 1:length(LUI_ext)){
   LUclasses<-LUI_ext[[j]]
   LUI_clear[[j]]<-LUclasses[!is.na(LUclasses)]
 }
+
+results<-as.data.frame(matrix(NA,length(LUI_clear),18))
+colnames(results)<-c("sitecode",paste("LUI",c(1:17),sep=""))
+
+
+for(k in 1:length(LUI_clear)){
+  results[k,1]<-as.character(overlap)[k]
+  
+  if(length(LUI_clear[[k]])==0){}else{
+    percent.LUI<-table(LUI_clear[[k]])/sum(table(LUI_clear[[k]]))
+    results[k,as.integer(names(table(LUI_clear[[k]])))+1]<-as.numeric(percent.LUI)
+  }
+  print(k)
+}
+
+View(results)
 
