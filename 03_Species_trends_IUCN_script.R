@@ -23,6 +23,7 @@ setwd(path2temp %+% "/")
 
 # Load data
 speciesTable<-read.csv("DIRECTIVESPECIES.csv")
+str(speciesTable)
 
 # Find list of unique N2000 SPAs (where SITETYPE is A or C)
 N2000Sites<-read.csv("NATURA2000SITES.csv",header=TRUE)

@@ -1,13 +1,4 @@
 ############################################################################
-### Purpose of this skript module 01 is to:
-### 
-### 01.1. load all libraries needed for subsequent analysis
-### 01.2. load all self-written functions needed for subsequent analysis
-###
-### Authors: MB ...
-############################################################################
-
-############################################################################
 ### 01.1. load all libraries needed for subsequent analysis, 
 ### automatically installs if libraries are missing
 ### Please add all libraries needed here
@@ -36,9 +27,3 @@ usePackage <- function(p) {
 sapply(needed_libs,usePackage)
 
 rm(needed_libs)
-
-############################################################################
-### 01.2. load all self-written functions needed for subsequent analysis
-###
-### to be added
-############################################################################
