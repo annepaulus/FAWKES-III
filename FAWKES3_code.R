@@ -45,6 +45,7 @@ names(mySPAsites)
 #mydata<-subset(mySpeciesdata, mySpeciesdata$SITECODE==mySPAsites$SITECODE)
 mydata<-merge(mySpeciesdata, mySPAsites, by="SITECODE")
 
+
 ############################################################################
 ### 3. Load archetypes raster and Natura2000 shapefiles
 ############################################################################
