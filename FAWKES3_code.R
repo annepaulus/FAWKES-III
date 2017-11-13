@@ -64,17 +64,21 @@ overlapSPA<-sitecodes[which(as.character(sitecodes)%in%as.character(N2000SPASite
 length(N2000SPASiteCodes)-length(overlapSPA)
 
 
+
+
+############################################################################
+### 4. overlay of SPAs with ACTs
+############################################################################
+
 # plot of raster and shapefiles (subset of first 50 shapefiles)
 plot(ACT)
-subset <- shape[as.character(shape$SITECODE)==as.character(overlapSPA[c(1:50)]),] # only 50 shapefiles
+subset <- shape[as.character(shape$SITECODE)==as.character(overlapSPA),]
 plot(subset, col="red", add=TRUE)
 
 
 # extract the ACTs sitecode-wise
 total <- length(overlapSPA) #5569 SPAs
 ACT_ext<-list()
-
-total<-1000
 
 pb <- txtProgressBar(min = 0, max = total, style = 3)
 
@@ -85,20 +89,16 @@ for (i in 1:total){
 }
 close(pb)
 
-
-
 # get rid of NAs
 ACT_clear<-list()
-
 for(j in 1:length(ACT_ext)){
   LUclasses<-ACT_ext[[j]]
-  ACT_clear[[j]]<-LUclasses[!is.na(LUclasses)]
-}
+  ACT_clear[[j]]<-LUclasses[!is.na(LUclasses)]}
 
 
 # create a dataframe for presenting the distribution of SPA-area per ACT
 results<-as.data.frame(matrix(NA,length(ACT_clear),18))
-colnames(results)<-c("sitecode",paste("ACT",c(1:17),sep=""))
+colnames(results)<-c("SITECODE",paste("ACT",c(1:17),sep=""))
 
 for(k in 1:length(ACT_clear)){
   results[k,1]<-as.character(overlapSPA)[k]
@@ -111,4 +111,44 @@ for(k in 1:length(ACT_clear)){
 }
 
 View(results)
+
+
+
+############################################################################
+### 5. relate conservation status with ACT via bird species
+############################################################################
+
+birds<-as.integer(unique(mydata$SPECIESCODE))
+length(unique(mydata$SPECIESCODE)) # 552 bird species
+
+#for each species, link the ACts (1 to 17) with the Conservation Status (for all sites)
+
+specUniq <- unique(mydata$SPECIESCODE)
+tabFinal <- numeric()
+
+total_b <- length(specUniq)
+total_b <- 10 # for now: shorten the table
+
+for(l in 1:total_b){
+  subTmp <- subset(mydata, mydata$SPECIESCODE==specUniq[l])
+  subTmp <- merge(subTmp, results, by="SITECODE")
+  tabFinal <- rbind(tabFinal, subTmp)
+  print(l)
+}
+
+View(tabFinal)
+
+
+############################################################################
+### 6. correlations between Conservation status and ACTs
+############################################################################
+
+plot(tabFinal$CONSERVATION~tabFinal$ACT17)
+plot(tabFinal$CONSERVATION~tabFinal$ACT5)
+
+
+
+
+
+
 
