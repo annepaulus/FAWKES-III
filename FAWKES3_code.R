@@ -38,13 +38,12 @@ names(mySpeciesdata) # "SITECODE"  "SPECIESNAME"  "SPECIESCODE"  "CONSERVATION"
 # Sitecodes of the SPAs
 N2000Sites<-read.csv("NATURA2000SITES.csv",header=TRUE)
 names(N2000Sites)
-#N2000SPASiteCodes<-subset(N2000Sites$SITECODE,N2000Sites$SITETYPE=="A"|N2000Sites$SITETYPE=="C") # list of N2000 SPA Sites (where SITETYPE is A or C)
-SPAs_only<-which(N2000Sites$SITETYPE=="A"|N2000Sites$SITETYPE=="C")
+SPAs_only<-which(N2000Sites$SITETYPE=="A"|N2000Sites$SITETYPE=="C") # list of N2000 SPA Sites (where SITETYPE is A or C)
 mySPAsites<-N2000Sites[SPAs_only,c(2,3)] # list of SPA sitecodes: 5572 sites
 names(mySPAsites) 
 
 #mydata<-subset(mySpeciesdata, mySpeciesdata$SITECODE==mySPAsites$SITECODE)
-mydata<-merge(mySpeciesdata, mySPAsites, by="SITECODE")
+mydata<-merge(mySpeciesdata, mySPAsites, by="SITECODE") #205.140 observations
 
 
 ############################################################################
@@ -52,35 +51,36 @@ mydata<-merge(mySpeciesdata, mySPAsites, by="SITECODE")
 ############################################################################
 
 # archetypes raster data by Levers et al
-LUI<-raster("ArchetypicalChangeTrajectories_1990_2006_Levers2015.tif")
-values(LUI)[values(LUI) > 17] = NA    #there are only 17 categories: put all values > 17 to NAs
+ACT<-raster("ArchetypicalChangeTrajectories_1990_2006_Levers2015.tif")
+values(ACT)[values(ACT) > 17] = NA    #there are only 17 categories: put all values > 17 to NAs
 
 # Natura 2000 shapefiles
 shape <- readOGR(dsn = ".", layer = "Natura2000_end2016") 
-sitecodes<-shape$SITECODE # get Sitecodes of shapefiles: 27510 sites
+sitecodes<-shape$SITECODE # get Sitecodes of shapefiles: 27.510 sites
 
 # There are 3 Sitecodes which cannot be found in the SPA Shapefiles
-overlap<-sitecodes[which(as.character(sitecodes)%in%as.character(N2000SPASiteCodes)==T)]
-length(N2000SPASiteCodes)-length(overlap) # 5569 SPA sites
+N2000SPASiteCodes<-subset(N2000Sites$SITECODE,N2000Sites$SITETYPE=="A"|N2000Sites$SITETYPE=="C") # 5572 sitecodes
+overlapSPA<-sitecodes[which(as.character(sitecodes)%in%as.character(N2000SPASiteCodes)==T)] # 5569 sitecodes
+length(N2000SPASiteCodes)-length(overlapSPA)
 
 
 # plot of raster and shapefiles (subset of first 50 shapefiles)
-plot(LUI)
-subset <- shape[as.character(shape$SITECODE)==as.character(overlap[c(1:50)]),] # only 50 shapefiles
+plot(ACT)
+subset <- shape[as.character(shape$SITECODE)==as.character(overlapSPA[c(1:50)]),] # only 50 shapefiles
 plot(subset, col="red", add=TRUE)
 
 
-# extract the LUIs sitecode-wise
-total <- length(overlap) #5569 SPAs
-LUI_ext<-list()
+# extract the ACTs sitecode-wise
+total <- length(overlapSPA) #5569 SPAs
+ACT_ext<-list()
 
 total<-1000
 
 pb <- txtProgressBar(min = 0, max = total, style = 3)
 
 for (i in 1:total){
-  subset <- shape[as.character(shape$SITECODE)==as.character(overlap)[i],] # takes one sitecode of the shapefile
-  LUI_ext[[i]]<-extract(LUI,subset) # extracts rasterdata for each sitecode
+  subset <- shape[as.character(shape$SITECODE)==as.character(overlapSPA)[i],] # takes one sitecode of the shapefile
+  ACT_ext[[i]]<-extract(ACT,subset) # extracts rasterdata for each sitecode
   setTxtProgressBar(pb, i)
 }
 close(pb)
@@ -88,23 +88,24 @@ close(pb)
 
 
 # get rid of NAs
-LUI_clear<-list()
+ACT_clear<-list()
 
-for(j in 1:length(LUI_ext)){
-  LUclasses<-LUI_ext[[j]]
-  LUI_clear[[j]]<-LUclasses[!is.na(LUclasses)]
+for(j in 1:length(ACT_ext)){
+  LUclasses<-ACT_ext[[j]]
+  ACT_clear[[j]]<-LUclasses[!is.na(LUclasses)]
 }
 
-results<-as.data.frame(matrix(NA,length(LUI_clear),18))
-colnames(results)<-c("sitecode",paste("LUI",c(1:17),sep=""))
 
+# create a dataframe for presenting the distribution of SPA-area per ACT
+results<-as.data.frame(matrix(NA,length(ACT_clear),18))
+colnames(results)<-c("sitecode",paste("ACT",c(1:17),sep=""))
 
-for(k in 1:length(LUI_clear)){
-  results[k,1]<-as.character(overlap)[k]
+for(k in 1:length(ACT_clear)){
+  results[k,1]<-as.character(overlapSPA)[k]
   
-  if(length(LUI_clear[[k]])==0){}else{
-    percent.LUI<-table(LUI_clear[[k]])/sum(table(LUI_clear[[k]]))
-    results[k,as.integer(names(table(LUI_clear[[k]])))+1]<-as.numeric(percent.LUI)
+  if(length(ACT_clear[[k]])==0){}else{
+    percent.ACT<-table(ACT_clear[[k]])/sum(table(ACT_clear[[k]]))
+    results[k,as.integer(names(table(ACT_clear[[k]])))+1]<-as.numeric(percent.ACT)
   }
   print(k)
 }
