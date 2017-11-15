@@ -33,7 +33,9 @@ names(N2000Species)
 
 Birds_only<-which(N2000Species$SPGROUP=="Birds")
 mySpeciesdata<-N2000Species[Birds_only,c(2,3,4,16)] # 312.826 observations and 4 variables
-names(mySpeciesdata) # "SITECODE"  "SPECIESNAME"  "SPECIESCODE"  "CONSERVATION"
+Cons_only<-which(mySpeciesdata$CONSERVATION=="A"|mySpeciesdata$CONSERVATION=="B"|mySpeciesdata$CONSERVATION=="C") # remove CS = "NULL"
+mySpeciesdata<-mySpeciesdata[Cons_only,] #211.807 observations and 4 variables
+View(mySpeciesdata)
 
 # Sitecodes of the SPAs
 N2000Sites<-read.csv("NATURA2000SITES.csv",header=TRUE)
@@ -43,7 +45,7 @@ mySPAsites<-N2000Sites[SPAs_only,c(2,3)] # list of SPA sitecodes: 5572 sites
 names(mySPAsites) 
 
 #mydata<-subset(mySpeciesdata, mySpeciesdata$SITECODE==mySPAsites$SITECODE)
-mydata<-merge(mySpeciesdata, mySPAsites, by="SITECODE") #205.140 observations
+mydata<-merge(mySpeciesdata, mySPAsites, by="SITECODE") # 148.452 observations
 
 
 ############################################################################
@@ -119,7 +121,7 @@ View(results)
 ############################################################################
 
 birds<-as.integer(unique(mydata$SPECIESCODE))
-length(unique(mydata$SPECIESCODE)) # 552 bird species
+length(unique(mydata$SPECIESCODE)) # 530 bird species
 
 #for each species, link the ACts (1 to 17) with the Conservation Status (for all sites)
 
@@ -138,14 +140,51 @@ for(l in 1:total_b){
 
 View(tabFinal)
 
+tabFinal[is.na(tabFinal)] <- 0
 
 ############################################################################
 ### 6. correlations between Conservation status and ACTs
 ############################################################################
 
-plot(tabFinal$CONSERVATION~tabFinal$ACT17)
-plot(tabFinal$CONSERVATION~tabFinal$ACT5)
+# just for fun: which are the ten most assessed bird species?
+sort(table(mySpeciesdata$SPECIESCODE),decreasing=TRUE)[1:10]
+sort(table(mySpeciesdata$SPECIESNAME),decreasing=TRUE)[1:10]
+# Speciescode: A338 A081 A229 A072 A236 A103 A246 A224 A082 A053 
+# Species names: Lanius collurio    Circus aeruginosus         Alcedo atthis       Pernis apivorus      Falco peregrinus     Dryocopus martius Anas platyrhynchos       Lullula arborea Caprimulgus europaeus        Circus cyaneus
+# Observations:3090 2681 2594 2367 2240 2145 2059 1992 1896 1855 
 
+
+
+# Circus cyaneus - Hen Harrier (Kornweihe): Species code A082
+A082<-subset(tabFinal, tabFinal$SPECIESCODE=="A082")
+
+cons<-A082$CONSERVATION
+cons <- factor(cons,levels = c("A","B","C"))
+
+ACT1<-A082$ACT1
+ACT2<-A082$ACT2
+ACT3<-A082$ACT3
+ACT4<-A082$ACT4
+ACT5<-A082$ACT5
+ACT6<-A082$ACT6
+ACT7<-A082$ACT7
+ACT8<-A082$ACT8
+ACT9<-A082$ACT9
+ACT10<-A082$ACT10
+ACT11<-A082$ACT11
+ACT12<-A082$ACT12
+ACT13<-A082$ACT13
+ACT14<-A082$ACT14
+ACT15<-A082$ACT15
+ACT16<-A082$ACT16
+ACT17<-A082$ACT17
+
+
+mod <- lm(as.numeric(cons)~ACT1+ACT2+ACT3+ACT4+ACT5+ACT6+ACT7+ACT8+ACT9+ACT10+ACT11+ACT12+ACT13+ACT14+ACT15+ACT16+ACT17)
+summary(mod)
+plot(mod)
+
+consA<-which(A082$CONSERVATION=="A")
 
 
 
