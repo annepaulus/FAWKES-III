@@ -23,7 +23,18 @@ rm(needed_libs)
 ############################################################################
 
 setwd("C:/Users/hoelting/Documents/FAWKES/R")
+<<<<<<< HEAD
 unzip("PublicNatura2000End2015_csv.zip")
+=======
+#setwd("~/git/FAWKES-III")
+
+# Get Natura 2000 data
+if (file.exists("PublicNatura2000End2015_csv.zip")==FALSE){
+    download.file("https://www.dropbox.com/s/yaujzwuijyzluc6/PublicNatura2000End2015_csv.zip?dl=1", "PublicNatura2000End2015_csv.zip", mode="wb")
+    unzip("PublicNatura2000End2015_csv.zip")
+  } else {unzip("PublicNatura2000End2015_csv.zip")}
+
+>>>>>>> f36072459a681c6773b4e55fdeef6ba9aea45b37
 
 # create table of all Bird species with Sitecodes and Conservation Status
 
@@ -49,6 +60,11 @@ mydata <- merge(mySpeciesdata, mySPAsites, by="SITECODE") # 148.452 observations
 ### 3. Load archetypes raster and Natura2000 shapefiles
 ############################################################################
 
+if (file.exists("ArchetypicalChangeTrajectories_1990_2006_Levers2015.tif")==FALSE){
+  download.file("https://www.dropbox.com/s/n469veo95z4lghy/ArchetypicalChangeTrajectories_1990_2006_Levers2015.tif?dl=1", "ArchetypicalChangeTrajectories_1990_2006_Levers2015.tif", mode="wb")
+} else {print("file exists")}
+
+
 # archetypes raster data by Levers et al
 ACT<-raster("ArchetypicalChangeTrajectories_1990_2006_Levers2015.tif")
 LSA<-raster("LandSystemArchetypes_2006_Levers2015.tif")
@@ -56,6 +72,12 @@ values(ACT)[values(ACT) > 17] = NA       # there are only 17 categories: put all
 
 plot(ACT)
 plot(LSA)
+
+if (file.exists("Natura2000_end2016_Shapefile.zip")==FALSE){
+  download.file("https://www.dropbox.com/s/uxvung7v2vttqf0/Natura2000_end2016_Shapefile.zip?dl=1", "Natura2000_end2016_Shapefile.zip", mode="wb")
+  unzip("Natura2000_end2016_Shapefile.zip")
+} else {unzip("Natura2000_end2016_Shapefile.zip")}
+
 
 # Natura 2000 shapefiles
 shape <- readOGR(dsn = ".", layer = "Natura2000_end2016") 
