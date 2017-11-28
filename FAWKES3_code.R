@@ -23,29 +23,26 @@ rm(needed_libs)
 ############################################################################
 
 setwd("C:/Users/hoelting/Documents/FAWKES/R")
-
-# Get Natura 2000 data
 unzip("PublicNatura2000End2015_csv.zip")
 
-# create table of all Bird species with Site codes and Conservation Status
-N2000Species<-read.csv("SPECIES.csv",header=TRUE)
-names(N2000Species)
+# create table of all Bird species with Sitecodes and Conservation Status
 
-Birds_only<-which(N2000Species$SPGROUP=="Birds")
-mySpeciesdata<-N2000Species[Birds_only,c(2,3,4,16)] # 312.826 observations and 4 variables
-Cons_only<-which(mySpeciesdata$CONSERVATION=="A"|mySpeciesdata$CONSERVATION=="B"|mySpeciesdata$CONSERVATION=="C") # remove CS = "NULL"
-mySpeciesdata<-mySpeciesdata[Cons_only,] #211.807 observations and 4 variables
-View(mySpeciesdata)
+N2000Species <- read.csv("SPECIES.csv",header=TRUE)
+Birds_only <- which(N2000Species$SPGROUP=="Birds")
+mySpeciesdata <- N2000Species[Birds_only,c(2,3,4,16)] # 312.826 observations
+mySpeciesdata <- mySpeciesdata[!duplicated(mySpeciesdata), ]
 
-# Sitecodes of the SPAs
-N2000Sites<-read.csv("NATURA2000SITES.csv",header=TRUE)
-names(N2000Sites)
-SPAs_only<-which(N2000Sites$SITETYPE=="A"|N2000Sites$SITETYPE=="C") # list of N2000 SPA Sites (where SITETYPE is A or C)
-mySPAsites<-N2000Sites[SPAs_only,c(2,3)] # list of SPA sitecodes: 5572 sites
-names(mySPAsites) 
+# remove Conservation Status = "NULL"
+Cons_only <- which(mySpeciesdata$CONSERVATION=="A"|mySpeciesdata$CONSERVATION=="B"|mySpeciesdata$CONSERVATION=="C") 
+mySpeciesdata <- mySpeciesdata[Cons_only,]            # 211.807 observations
 
-#mydata<-subset(mySpeciesdata, mySpeciesdata$SITECODE==mySPAsites$SITECODE)
-mydata<-merge(mySpeciesdata, mySPAsites, by="SITECODE") # 148.452 observations
+# take only SPA sites (where SITETYPE is A or C)
+N2000Sites <- read.csv("NATURA2000SITES.csv",header=TRUE)
+SPAs_only <- which(N2000Sites$SITETYPE=="A"|N2000Sites$SITETYPE=="C") 
+mySPAsites <- N2000Sites[SPAs_only,c(2,3)]            # 5572 sites
+
+# table of all Bird species with Sitecodes and Conservation Status
+mydata <- merge(mySpeciesdata, mySPAsites, by="SITECODE") # 148.452 observations
 
 
 ############################################################################
@@ -54,18 +51,20 @@ mydata<-merge(mySpeciesdata, mySPAsites, by="SITECODE") # 148.452 observations
 
 # archetypes raster data by Levers et al
 ACT<-raster("ArchetypicalChangeTrajectories_1990_2006_Levers2015.tif")
-values(ACT)[values(ACT) > 17] = NA    #there are only 17 categories: put all values > 17 to NAs
+LSA<-raster("LandSystemArchetypes_2006_Levers2015.tif")
+values(ACT)[values(ACT) > 17] = NA       # there are only 17 categories: put all values > 17 to NAs
+
+plot(ACT)
+plot(LSA)
 
 # Natura 2000 shapefiles
 shape <- readOGR(dsn = ".", layer = "Natura2000_end2016") 
-sitecodes<-shape$SITECODE # get Sitecodes of shapefiles: 27.510 sites
+sitecodes <- shape$SITECODE             # 27.510 NATURA2000 sites
 
 # There are 3 Sitecodes which cannot be found in the SPA Shapefiles
-N2000SPASiteCodes<-subset(N2000Sites$SITECODE,N2000Sites$SITETYPE=="A"|N2000Sites$SITETYPE=="C") # 5572 sitecodes
-overlapSPA<-sitecodes[which(as.character(sitecodes)%in%as.character(N2000SPASiteCodes)==T)] # 5569 sitecodes
+N2000SPASiteCodes <- subset(N2000Sites$SITECODE,N2000Sites$SITETYPE=="A"|N2000Sites$SITETYPE=="C")  # 5572 sitecodes
+overlapSPA <- sitecodes[which(as.character(sitecodes)%in%as.character(N2000SPASiteCodes)==T)]       # 5569 sitecodes
 length(N2000SPASiteCodes)-length(overlapSPA)
-
-
 
 
 ############################################################################
@@ -74,54 +73,102 @@ length(N2000SPASiteCodes)-length(overlapSPA)
 
 # plot of raster and shapefiles (subset of first 50 shapefiles)
 plot(ACT)
-subset <- shape[as.character(shape$SITECODE)==as.character(overlapSPA),]
+subset <- shape[which(as.character(sitecodes)%in%as.character(N2000SPASiteCodes)==T),]
 plot(subset, col="red", add=TRUE)
 
+# extract the ACTs, LSAs and area of the SPAs sitecode-wise
+total <- length(overlapSPA)       #5569 SPAs
 
-# extract the ACTs sitecode-wise
-total <- length(overlapSPA) #5569 SPAs
 ACT_ext<-list()
+LSA_ext<-list()
+area<-list()
 
-pb <- txtProgressBar(min = 0, max = total, style = 3)
+pb <- txtProgressBar(min = 0, max = total, style = 3) # produces a progress bar
 
+# normalizeWeights==TRUE --> der Anteil der extrahierten Pixelfläche an der Gesamtfläche des Polygones
+# Problem hierbei: falls man im Nachhinein NAs rauswirft stimmen die Verhältnisse nicht mehr
+# normalizeWeights==FALSE --> der Anteil des extrahierten Pixels 
+
+# this loop will run for ca.60 minutes! ...go for lunch or for a walk ;o)
 for (i in 1:total){
-  subset <- shape[as.character(shape$SITECODE)==as.character(overlapSPA)[i],] # takes one sitecode of the shapefile
-  ACT_ext[[i]]<-extract(ACT,subset) # extracts rasterdata for each sitecode
+  subset <- shape[as.character(shape$SITECODE)==as.character(overlapSPA)[i],]       # takes each shapefile, if it is a SPA
+  ACT_ext[[i]]<-extract(ACT,subset,weights=TRUE,normalizeWeights=TRUE)              # extracts ACT rasterdata for each sitecode
+  LSA_ext[[i]]<-extract(LSA,subset,weights=TRUE,normalizeWeights=TRUE)              # extracts LSA rasterdata for each sitecode
+  area[[i]]<-area(subset)                                                           # extracts areal data for each sitecode
   setTxtProgressBar(pb, i)
 }
 close(pb)
 
+
 # get rid of NAs
-ACT_clear<-list()
-for(j in 1:length(ACT_ext)){
-  LUclasses<-ACT_ext[[j]]
-  ACT_clear[[j]]<-LUclasses[!is.na(LUclasses)]}
+ACT_red<-list()
+area_red<-list()
+
+for (i in 1:total){
+  if(is.null(ACT_ext[[i]][[1]])==TRUE) {
+    ACT_red[[i]]<-NA  
+    area_red[[i]]<-NA
+  }else{
+    if(isTRUE(unique(is.na(as.data.frame(ACT_ext[[i]])$value)))==TRUE){
+      ACT_red[[i]]<-NA  
+      area_red[[i]]<-NA
+    }else{
+      f.correct<-1/sum(as.data.frame(ACT_ext[[i]])[!is.na(as.data.frame(ACT_ext[[i]])[,1]),2])
+      reduced.na<-as.data.frame(ACT_ext[[i]])[!is.na(as.data.frame(ACT_ext[[i]])[,1]),]
+      reduced.na[,2]<-reduced.na[,2]*f.correct
+      ACT_red[[i]]<-reduced.na
+      area_red[[i]]<-area[[i]]*sum(as.data.frame(ACT_ext[[i]])[!is.na(as.data.frame(ACT_ext[[i]])[,1]),2])
+    }
+  }    
+}   
+
+#save.image(file = "FAWKES.RData")
+#load("~/FAWKES/R/FAWKES.RData")
 
 
-# create a dataframe for presenting the distribution of SPA-area per ACT
-results<-as.data.frame(matrix(NA,length(ACT_clear),18))
-colnames(results)<-c("SITECODE",paste("ACT",c(1:17),sep=""))
 
-for(k in 1:length(ACT_clear)){
+############################################################################
+### 5. create a results dataframe
+############################################################################
+
+results <- as.data.frame(matrix(NA,length(ACT_red),20))
+colnames(results) <- c("SITECODE","area",paste("ACT",c(1:17),sep=""),"count")
+
+for(k in 1:length(ACT_red)){
   results[k,1]<-as.character(overlapSPA)[k]
+  results[k,2]<-area_red[[k]]
   
-  if(length(ACT_clear[[k]])==0){}else{
-    percent.ACT<-table(ACT_clear[[k]])/sum(table(ACT_clear[[k]]))
-    results[k,as.integer(names(table(ACT_clear[[k]])))+1]<-as.numeric(percent.ACT)
+  if(is.na(ACT_red[[k]])==TRUE){
+    results[k,3:19]<-NA
+  } else{
+    test.sum<-cbind(aggregate(weight~value,sum,data=ACT_red[[k]]),table(ACT_red[[k]]$value))
+    results[k,test.sum$value+2]<-test.sum$weight
+    results[k,20]<-sum(test.sum$Freq)
+    
   }
   print(k)
 }
 
 View(results)
 
+hist(results$count,breaks=100)
+hist(results$area,breaks=100)
+length(which(results$count<2))    # 415 sites with only one pixel (3x3km)
+
+res_final<-data.frame(matrix(NA,nrow(results)))
+
+#install.packages("xlsx")
+#library(xlsx)
+#write.xlsx(results, "C:/Users/hoelting/Documents/FAWKES/R/results3.xlsx") 
+
+results[is.na(results)]<-0
+View(results)
+summary(results)
 
 
 ############################################################################
-### 5. relate conservation status with ACT via bird species
+### 6. relate conservation status with ACT via bird species
 ############################################################################
-
-birds<-as.integer(unique(mydata$SPECIESCODE))
-length(unique(mydata$SPECIESCODE)) # 530 bird species
 
 #for each species, link the ACts (1 to 17) with the Conservation Status (for all sites)
 
@@ -129,7 +176,6 @@ specUniq <- unique(mydata$SPECIESCODE)
 tabFinal <- numeric()
 
 total_b <- length(specUniq)
-total_b <- 10 # for now: shorten the table
 
 for(l in 1:total_b){
   subTmp <- subset(mydata, mydata$SPECIESCODE==specUniq[l])
@@ -138,56 +184,55 @@ for(l in 1:total_b){
   print(l)
 }
 
+
 View(tabFinal)
 
+tabFinal <- tabFinal[!duplicated(tabFinal), ]
 tabFinal[is.na(tabFinal)] <- 0
+
+#tabFinal2 <- merge(mydata,results, by="SITECODE")
+#View(tabFinal2)
+
+#save.image(file = "FAWKES.RData")
+#load("~/FAWKES/R/FAWKES.RData")
 
 ############################################################################
 ### 6. correlations between Conservation status and ACTs
 ############################################################################
 
-# just for fun: which are the ten most assessed bird species?
-sort(table(mySpeciesdata$SPECIESCODE),decreasing=TRUE)[1:10]
-sort(table(mySpeciesdata$SPECIESNAME),decreasing=TRUE)[1:10]
-# Speciescode: A338 A081 A229 A072 A236 A103 A246 A224 A082 A053 
-# Species names: Lanius collurio    Circus aeruginosus         Alcedo atthis       Pernis apivorus      Falco peregrinus     Dryocopus martius Anas platyrhynchos       Lullula arborea Caprimulgus europaeus        Circus cyaneus
-# Observations:3090 2681 2594 2367 2240 2145 2059 1992 1896 1855 
+CStatus<-tabFinal$CONSERVATION
+CStatus <- factor(CStatus,levels = c("A","B","C"))
 
+dat <- data.frame(tabFinal[,c(1:6)],
+                  CStatus = factor(CStatus,levels = c("A","B","C")),
+                  Conversion = rowSums(tabFinal[,18:22]),
+                  Intens = rowSums(tabFinal[,c(7:10,17)]),
+                  De_intens = rowSums(tabFinal[,11:16]),
+                  Stabil = c(tabFinal[,23]))
 
+View(dat)
 
-# Circus cyaneus - Hen Harrier (Kornweihe): Species code A082
-A082<-subset(tabFinal, tabFinal$SPECIESCODE=="A082")
+install.packages("ggplot2")
+library("ggplot2")
 
-cons<-A082$CONSERVATION
-cons <- factor(cons,levels = c("A","B","C"))
+ggplot(dat, aes(x=dat$CStatus, y = dat$Conversion + dat$Intens + dat$De_intens + dat$Stabil)) +
+geom_boxplot(size = .75) +
+  geom_jitter(alpha = .5) +
+  facet_grid(dat$CStatus ~ dat$Conversion + dat$Intens + dat$De_intens + dat$Stabil, margins = TRUE) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
 
-ACT1<-A082$ACT1
-ACT2<-A082$ACT2
-ACT3<-A082$ACT3
-ACT4<-A082$ACT4
-ACT5<-A082$ACT5
-ACT6<-A082$ACT6
-ACT7<-A082$ACT7
-ACT8<-A082$ACT8
-ACT9<-A082$ACT9
-ACT10<-A082$ACT10
-ACT11<-A082$ACT11
-ACT12<-A082$ACT12
-ACT13<-A082$ACT13
-ACT14<-A082$ACT14
-ACT15<-A082$ACT15
-ACT16<-A082$ACT16
-ACT17<-A082$ACT17
+require(foreign)
+require(ggplot2)
+require(MASS)
+require(Hmisc)
+require(reshape2)
 
+m <- polr(dat$CStatus ~ dat$Conversion + dat$Intens + dat$De_intens + dat$Stabil, data = dat, Hess=TRUE)
+summary(m)
+(ctable <- coef(summary(m)))
 
-mod <- lm(as.numeric(cons)~ACT1+ACT2+ACT3+ACT4+ACT5+ACT6+ACT7+ACT8+ACT9+ACT10+ACT11+ACT12+ACT13+ACT14+ACT15+ACT16+ACT17)
-summary(mod)
-plot(mod)
+## calculate and store p values
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
 
-consA<-which(A082$CONSERVATION=="A")
-
-
-
-
-
-
+## combined table
+(ctable <- cbind(ctable, "p value" = p))
