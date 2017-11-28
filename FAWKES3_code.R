@@ -171,7 +171,6 @@ summary(results)
 ############################################################################
 
 #for each species, link the ACts (1 to 17) with the Conservation Status (for all sites)
-
 specUniq <- unique(mydata$SPECIESCODE)
 tabFinal <- numeric()
 
