@@ -187,7 +187,6 @@ results[is.na(results)]<-0
 View(results)
 summary(results)
 
-
 ############################################################################
 ### 6. relate conservation status with ACT via bird species
 ############################################################################
@@ -216,6 +215,9 @@ tabFinal[is.na(tabFinal)] <- 0
 
 #save.image(file = "FAWKES.RData")
 #load("~/FAWKES/R/FAWKES.RData")
+
+
+
 
 ############################################################################
 ### 6. correlations between Conservation status and ACTs
