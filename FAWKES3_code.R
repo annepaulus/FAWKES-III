@@ -24,10 +24,10 @@ rm(needed_libs)
 ### 2. load Natura2000 Species data
 ############################################################################
 
-setwd("D:/Leeds/tempDirectory")
+setwd("C:/Users/hoelting/Documents/FAWKES/Leeds/tempDirectory")
 unzip("PublicNatura2000End2015_csv.zip")
 
-setwd("D:/Leeds")
+setwd("C:/Users/hoelting/Documents/FAWKES/Leeds")
 
 # create table of all Bird species with Sitecodes and Conservation Status
 # take only bird species
