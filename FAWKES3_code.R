@@ -29,46 +29,37 @@ unzip("PublicNatura2000End2015_csv.zip")
 
 setwd("C:/Users/hoelting/Documents/FAWKES/Leeds")
 
-# create table of all Bird species with Sitecodes and Conservation Status
-# take only bird species
+### create table of all Bird species with Sitecodes and Conservation Status
+
 N2000Species <- read.csv("./tempDirectory/SPECIES.csv",header=TRUE)
-Birds_only <- which(N2000Species$SPGROUP=="Birds")
-mySpeciesdata <- N2000Species[Birds_only,c(2,3,4,16)] # 312.826 observations
+mySpeciesdata <- N2000Species[which(N2000Species$SPGROUP=="Birds"),c(2,3,4,16)] # only bird species
+mySpeciesdata <- mySpeciesdata[which(mySpeciesdata$CONSERVATION=="A"|mySpeciesdata$CONSERVATION=="B"|mySpeciesdata$CONSERVATION=="C"),]       # remove Conservation Status = "NULL"
 
-# remove Conservation Status = "NULL"
-Cons_only <- which(mySpeciesdata$CONSERVATION=="A"|mySpeciesdata$CONSERVATION=="B"|mySpeciesdata$CONSERVATION=="C") 
-mySpeciesdata <- mySpeciesdata[Cons_only,]            # 211.807 observations
+N2000Sites <- read.csv("./tempDirectory/NATURA2000SITES.csv",header=TRUE) 
+mySPAsites <- N2000Sites[which(N2000Sites$SITETYPE=="A"|N2000Sites$SITETYPE=="C"),c(2,3)]  # take only SPA sites (where SITETYPE is A or C) and columns 2 and 3
 
-# take only SPA sites (where SITETYPE is A or C)
-N2000Sites <- read.csv("./tempDirectory/NATURA2000SITES.csv",header=TRUE)
-SPAs_only <- which(N2000Sites$SITETYPE=="A"|N2000Sites$SITETYPE=="C") 
-mySPAsites <- N2000Sites[SPAs_only,c(2,3)]            # 5572 sites
-
-# table of all Bird species with Sitecodes and Conservation Status
-mydata <- merge(mySpeciesdata, mySPAsites, by="SITECODE") # 148.452 observations
-
+mydata <- merge(mySpeciesdata, mySPAsites, by="SITECODE")
 
 ############################################################################
 ### 3. Load archetypes raster and Natura2000 shapefiles
 ############################################################################
 
-# archetypes raster data by Levers et al
-ACT<-raster("ArchetypicalChangeTrajectories_1990_2006_Levers2015.tif")
-#LSA<-raster("LandSystemArchetypes_2006_Levers2015.tif")
-values(ACT)[values(ACT) > 17] = NA       # there are only 17 categories: put all values > 17 to NAs
-
-plot(ACT)
+setwd("C:/Users/hoelting/Documents/FAWKES/data levers")
+LSA<-raster("LandSystemArchetypes_2006_Levers2015.tif")
 plot(LSA)
+hist(LSA)
 
-# Natura 2000 shapefiles
+hist(ACT)
+ACT<-raster("ArchetypicalChangeTrajectories_1990_2006_Levers2015.tif")
+values(ACT)[values(ACT) > 17] = NA       # there are only 17 categories: put all values > 17 to NAs
+plot(ACT)
+
 shape <- readOGR(dsn = ".", layer = "Natura2000_end2016") 
-sitecodes <- shape$SITECODE             # 27.510 NATURA2000 sites
-
+sitecodes <- shape$SITECODE 
 # There are 3 Sitecodes which cannot be found in the SPA Shapefiles
 N2000SPASiteCodes <- subset(N2000Sites$SITECODE,N2000Sites$SITETYPE=="A"|N2000Sites$SITETYPE=="C")  # 5572 sitecodes
 overlapSPA <- sitecodes[which(as.character(sitecodes)%in%as.character(N2000SPASiteCodes)==T)]       # 5569 sitecodes
 length(N2000SPASiteCodes)-length(overlapSPA)
-
 
 ############################################################################
 ### 4. overlay of SPAs with ACTs
@@ -76,8 +67,8 @@ length(N2000SPASiteCodes)-length(overlapSPA)
 
 # plot of raster and shapefiles (subset of first 50 shapefiles)
 plot(ACT)
-subset <- shape[which(as.character(sitecodes)%in%as.character(N2000SPASiteCodes)==T),]
-plot(subset[1:50,], col="red", add=TRUE)
+subset <- shape[which(as.character(sitecodes)%in%as.character(N2000SPASiteCodes)==T),]   # only subset for now
+plot(subset[1:50,], col="red", add=TRUE)    # only subset for now
 
 
 #fun with outer buffers
@@ -180,10 +171,6 @@ for (i in 1:total){
 
 
 
-
-
-
-
 # create a dataframe for presenting the distribution of SPA-area per ACT
 results <- as.data.frame(matrix(NA,length(ACT_red),20))
 colnames(results) <- c("SITECODE","area",paste("ACT",c(1:17),sep=""),"count")
@@ -206,8 +193,7 @@ for(k in 1:length(ACT_red)){
 
 
 results[is.na(results)]<-0
-
-
+results2 <- results[which(results$count>5),]
 
 ############################################################################
 ###       relate conservation status with ACT via bird species           ###
@@ -236,18 +222,15 @@ tabFinal$CONSERVATION<-CStatus
 tabFinal<-tabFinal[-which(tabFinal$SPECIESNAME=="--NULL--"),]
 tabFinal$SPECIESNAME<-droplevels(tabFinal$SPECIESNAME)
 
-
-
-bird<-read.csv("bird categorization.csv",sep=";")
-bird<-bird[1:596,2:4]
+bird<-read.csv("bird_categorization.csv",sep=";")
+bird<-bird[1:511,2:4]
 colnames(bird)<-c("SPECIESCODE","migration","preference")
+#bird <- bird[which(bird$migration=="mainly resident"),]
 
+tabFinal <- merge(tabFinal,bird, by="SPECIESCODE")
+table(bird$SPECIESCODE)
 
-tabFinal_b <- merge(tabFinal,bird, by="SPECIESCODE")
-
-table(bird$SPECIESCODE)#sth is still strange here
-
-which(table(bird$SPECIESCODE)>1) ###??????
+which(table(bird$SPECIESCODE)>1)
 
 #save.image(file = "FAWKES.RData")
 #load("~/FAWKES/R/FAWKES.RData")
@@ -263,15 +246,14 @@ install.packages("Hmisc")
 library(Hmisc)
 require(reshape2)
 
-
-
 dat <- data.frame(tabFinal[,c(1:6,24)],
                   Conversion = rowSums(tabFinal[,18:22]),
                   Intens = rowSums(tabFinal[,c(7:10,17)]),
                   De_intens = rowSums(tabFinal[,11:16]),
                   Stabil = c(tabFinal[,23]))
 
-
+tab <- merge(dat,bird, by="SPECIESCODE")
+View(dat)
 
 ###Describ. Stat.
 boxplot(dat[,8:11],col=c("darkred","red","lightgreen","green"))
@@ -287,6 +269,43 @@ boxplot(subset(dat,dat$CONSERVATION=="B")[,c(8:11)],col="yellow")
 boxplot(subset(dat,dat$CONSERVATION=="C")[,c(8:11)],col="red")
 
 
+##################### models for subgroup of birds #######################
+prey <- subset(tab, tab$preference=="birds of prey")
+open_c <- subset(tab, tab$preference=="open land carnivores")
+open_h <- subset(tab, tab$preference=="open land herbivores" )
+coastal <- subset(tab, tab$preference=="coastal species")
+lakes <- subset(tab, tab$preference=="wetland/lakes")
+wood_c <- subset(tab, tab$preference=="woodland carnivores" )
+wood_h <- subset(tab, tab$preference=="woodland herbivores")
+
+par(mfrow=c(3,1))
+boxplot(subset(open_h,open_c$CONSERVATION=="A")[,c(8:11)],col="green")
+boxplot(subset(open_h,open_c$CONSERVATION=="B")[,c(8:11)],col="yellow")
+boxplot(subset(open_h,open_c$CONSERVATION=="C")[,c(8:11)],col="red")
+
+par(mfrow=c(1,1))
+boxplot(prey[,8:11],col=c("darkred","red","lightgreen","green"))
+boxplot(open_c[,8:11],col=c("darkred","red","lightgreen","green"))
+boxplot(open_h[,8:11],col=c("darkred","red","lightgreen","green"))
+boxplot(wood_c[,8:11],col=c("darkred","red","lightgreen","green"))
+boxplot(wood_h[,8:11],col=c("darkred","red","lightgreen","green"))
+boxplot(lakes[,8:11],col=c("darkred","red","lightgreen","green"))
+boxplot(coastal[,8:11],col=c("darkred","red","lightgreen","green"))
+
+
+pom_prey <- vglm(factor(CONSERVATION,levels = c("A","B","C"),ordered = TRUE)~Conversion+Intens+De_intens+area,data=coastal, family = cumulative(parallel=FALSE)) 
+pom.ll <- logLik(pom_prey)
+pom0 <- vglm(factor(CONSERVATION,levels = c("A","B","C"),ordered = TRUE)~1,data=coastal, family = cumulative(parallel=FALSE))
+p0.ll <- logLik(pom0)
+# R^2 McFadden
+pom.mcfad <- as.vector(1 - (pom.ll/p0.ll))
+pom.mcfad
+
+# prey: 0.00369, open_c: 0.0087, open_h: 0.004609, wood_c: 0.00709, wood_h: -5.73 ???, lakes: 0.01467, coastal: 0.00853
+# counts > 5: prey: 0.0104, open_c: 0.0076, open_h: 0.0157,  wood_c: 0.0131,  wood_h: -2,09 ???, lakes: 0.00613, coastal: 0.0059
+
+# counts > 5 & "mainly resident": prey: 0.01333, open_c: 0.0074, open_h: 0.02249,  wood_c: 0.0188,  wood_h: -2,2 ???, lakes: 0.00817, coastal: 0.00269
+# "mainly resident": prey: 0.01046, open_c: 0.0076, open_h: 0.0157,  wood_c: 0.01314,  wood_h: 0.2263, lakes: 0.0061, coastal: 0.005969
 
 
 a<-strsplit(as.character(dat$SPECIESNAME), " ")
