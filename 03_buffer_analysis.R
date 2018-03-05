@@ -40,6 +40,7 @@ close(pb)
 
 # subset shapefile of 10 SPAs
 subset<-Natura2000_shape_all[1:10,]
+subset<-Natura2000_shape_all
 #plot(subset, col="red", add=TRUE)    # only subset for now
 
 #fun with outer buffers
@@ -52,10 +53,15 @@ outerBuffer<-function(x, d){
 buffer10<-list()
 # outer10km<-outerBuffer(x=subset,d=10000)
 
+
 myBuffer<-list()
+pb <- txtProgressBar(min = 0, max = length(subset), style = 3) # produces a progress bar
 for(i in 1:length(subset)){
   myBuffer[[i]]<-outerBuffer(x=subset[i,],d=10000)
+  setTxtProgressBar(pb, i)
 }
+close(pb)
+
 
 plot(ACT)
 plot(myBuffer[[1]], col="red", add=TRUE)

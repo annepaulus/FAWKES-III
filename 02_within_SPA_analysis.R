@@ -142,6 +142,89 @@ dat <- data.frame(tabFinal[,c(1:6,24)],
 tab <- merge(dat,bird, by="SPECIESCODE")
 View(dat)
 
+
+
+##################### Lisanne & Ron Derichlet-Regression ######################################
+
+sites<-unique(tab$SITECODE)
+mat<-as.data.frame(matrix(NA,length(sites), 9))
+colnames(mat)<-c("A","B","C","int","ext","cc","stab","area", "count")
+for(j in 1:length(sites)){
+  sub<-subset(tab,tab$SITECODE==sites[j])
+  prop.Cstat<-table(sub$CONSERVATION)/sum(table(sub$CONSERVATION))
+  mat[j,1:3]<-prop.Cstat
+  mat[j,4:7]<-sub[1,8:11]
+  mat[j,8]<-sub[1,6]
+  mat[j,9]<-sub[1,7] # count
+}
+
+
+
+
+species<-unique(tab$SPECIESCODE)
+mat_bird<-as.data.frame(matrix(NA,length(species), 8))
+colnames(mat_bird)<-c("A","B","C","int","ext","cc","stab", "SPECIESCODE")
+for(j in 1:length(species)){
+  sub<-subset(tab,tab$SPECIESCODE==species[j])
+  
+  lu_agg<-factor()
+  levels(lu_agg)<-c("Conversion","Stabil","De_intens","Intens")
+  
+  for(k in 1:length(sub$SPECIESCODE)){
+    lu_agg[k]<-names(which.max(sub[k,8:11]))
+  }
+  
+  mat_bird[j,4:7]<-table(lu_agg)/sum(table(lu_agg))
+  
+  prop.Cstat<-table(sub$CONSERVATION)/sum(table(sub$CONSERVATION))
+  mat_bird[j,1:3]<-prop.Cstat
+  mat_bird[j,4:7]<-sub[1,8:11]
+  mat_bird[j,8]<-as.character(sub[1,1])
+}
+
+
+
+mat
+
+require("DirichletReg")
+
+
+
+ABC_status <- DR_data(mat[, 1:3])
+
+plot(ABC_status, cex = 0.5, a2d = list(colored = FALSE, c.grid = FALSE))
+
+plot(rep(mat$int, 3), as.numeric(ABC_status), pch = 21,cex=0.2, bg = rep(c("#E495A5", "#86B875", "#7DB0DD"), each = 39), xlab = "intensity", ylab = "Proportion",ylim = 0:1)
+
+first_model <- DirichReg(ABC_status ~ mat$int+mat$cc+mat$ext)
+
+first_model <- DirichReg(ABC_status ~ mat$int)
+
+plot(rep(mat$int, 3), as.numeric(ABC_status), pch = 21,cex=0.2, bg = rep(c("#E495A5", "#86B875", "#7DB0DD"), each = 39), xlab = "intensity", ylab = "Proportion",ylim = 0:1)
+
+Xnew <- data.frame(int = seq(min(mat$int), max(mat$int),length.out = 100))
+for (i in 1:3) lines(cbind(Xnew, predict(first_model, Xnew)[, i]), col = c("#E495A5", "#86B875", "#7DB0DD")[i], lwd = 2)
+# 
+
+pre<-predict(first_model)
+
+plot(pre[,1]~mat$int)
+plot(pre[,2]~mat$int)
+plot(pre[,3]~mat$int)
+
+boxplot(mat[,1:3])
+
+# modA<-lm(A~int+ext+cc+stab+area,data=mat)
+# summary(modA)
+# 
+# plot(C~ext,data=mat)
+
+
+
+
+
+
+
 ###Describ. Stat.
 boxplot(dat[,8:11],col=c("darkred","red","lightgreen","green"))
 boxplot(tabFinal[,7:23],col=c("red","red","red","red","lightgreen","lightgreen",
@@ -182,6 +265,7 @@ for (i in 1:length(bird$SPECIESCODE)){
 
 
 
+head(dat)
 
 ##################### models for subgroup of birds #######################
 prey <- subset(tab, tab$preference=="birds of prey")
