@@ -101,6 +101,10 @@ values(ACT)[values(ACT) > 17] = NA       # there are only 17 categories: put all
 #hist(ACT)
 
 # load N2000 shapefile
+if (file.exists("Natura2000_end2016_Shapefile.zip")==FALSE){
+  download.file("https://www.dropbox.com/s/ckj83sfj1vcdznd/Natura2000_end2016_Shapefile.zip?dl=1", "Natura2000_end2016_Shapefile.zip", mode="wb")
+  unzip("Natura2000_end2016_Shapefile.zip")
+  } else {unzip("Natura2000_end2016_Shapefile.zip")}
 Natura2000_shape <- readOGR(dsn = ".", layer = "Natura2000_end2016") 
 sitecodes <- Natura2000_shape$SITECODE 
 
