@@ -4,6 +4,8 @@
 
 #plot(ACT)
 Natura2000_shape_all <- Natura2000_shape[which(as.character(sitecodes)%in%as.character(N2000SPASiteCodes)==T),]
+rm(Natura2000_shape) # frees 1.3 GB
+gc()
 
 # extract the ACTs, LSAs and area of the SPAs sitecode-wise
 total <- length(overlapSPA)       #5569 SPAs
@@ -21,7 +23,7 @@ perimeter<-list()
 
 pb <- txtProgressBar(min = 0, max = total, style = 3) # produces a progress bar
 for (i in 1:total){
-  subset <- Natura2000_shape[as.character(Natura2000_shape$SITECODE)==as.character(overlapSPA)[i],]
+  subset <- Natura2000_shape_all[as.character(Natura2000_shape_all$SITECODE)==as.character(overlapSPA)[i],]
   # takes each shapefile, if it is a SPA
   ACT_ext[[i]]<-extract(ACT,subset,weights=TRUE,normalizeWeights=TRUE)
   # extracts ACT rasterdata for each sitecode
@@ -31,6 +33,14 @@ for (i in 1:total){
   setTxtProgressBar(pb, i)
 }
 close(pb)
+
+saveRDS(ACT_ext, file = "ACT_ext.rds")
+saveRDS(area, file = "area.rds")
+saveRDS(perimeter, file = "perimeter.rds")
+
+ACT_ext<-readRDS(file = "ACT_ext.rds")
+area<-readRDS(file = "area.rds")
+perimeter<-readRDS(file = "perimeter.rds")
 
 #ACT_ext[[1]]
 

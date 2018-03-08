@@ -56,14 +56,19 @@ rm(needed_libs)
 
 setwd(path2temp)
 
-if (file.exists("PublicNatura2000End2016_csv.zip")==FALSE){
-  download.file("https://www.dropbox.com/s/52y55t4qdjaflhi/PublicNatura2000End2016_csv.zip?dl=1", "PublicNatura2000End2016_csv.zip", mode="wb")
-  unzip("PublicNatura2000End2016_csv.zip")
-} else {unzip("PublicNatura2000End2016_csv.zip")}
+# if (file.exists("PublicNatura2000End2016_csv.zip")==FALSE){
+#   download.file("https://www.dropbox.com/s/52y55t4qdjaflhi/PublicNatura2000End2016_csv.zip?dl=1", "PublicNatura2000End2016_csv.zip", mode="wb")
+#   unzip("PublicNatura2000End2016_csv.zip")
+# } else {unzip("PublicNatura2000End2016_csv.zip")}
+
+if (file.exists("PublicNatura2000End2015_csv.zip")==FALSE){
+  download.file("https://www.dropbox.com/s/6ftt2v0epsclzg5/PublicNatura2000End2015_csv.zip?dl=1", "PublicNatura2000End2015_csv.zip", mode="wb")
+  unzip("PublicNatura2000End2015_csv.zip")
+} else {unzip("PublicNatura2000End2015_csv.zip")}
 
 ### create table of all Bird species with Sitecodes and Conservation Status
 
-N2000Species <- read.csv("SPECIES.csv",header=TRUE)
+N2000Species <- read.csv("SPECIES.csv",header=TRUE, fileEncoding="UTF-16LE")
 mySpeciesdata <- N2000Species[which(N2000Species$SPGROUP=="Birds"),c(2,3,4,16)] # only bird species
 mySpeciesdata <- mySpeciesdata[which(mySpeciesdata$CONSERVATION=="A"|mySpeciesdata$CONSERVATION=="B"|mySpeciesdata$CONSERVATION=="C"),]       # remove Conservation Status = "NULL"
 
