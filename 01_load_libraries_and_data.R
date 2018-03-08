@@ -56,6 +56,9 @@ rm(needed_libs)
 
 setwd(path2temp)
 
+### For some odd reason the end2016 version of the Natura 200 data does not work properly in Windows 7 (Lisannes' PC) environments.
+### It works in Linux when importing as an UTF-16LE encoded file. We did not get it to import in Windows after tinkering around for 
+### 1+hour and decided to keep using the end2015 version instead
 # if (file.exists("PublicNatura2000End2016_csv.zip")==FALSE){
 #   download.file("https://www.dropbox.com/s/52y55t4qdjaflhi/PublicNatura2000End2016_csv.zip?dl=1", "PublicNatura2000End2016_csv.zip", mode="wb")
 #   unzip("PublicNatura2000End2016_csv.zip")
