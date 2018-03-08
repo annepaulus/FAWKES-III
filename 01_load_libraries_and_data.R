@@ -68,7 +68,7 @@ if (file.exists("PublicNatura2000End2015_csv.zip")==FALSE){
 
 ### create table of all Bird species with Sitecodes and Conservation Status
 
-N2000Species <- read.csv("SPECIES.csv",header=TRUE, fileEncoding="UTF-16LE")
+N2000Species <- read.csv("SPECIES.csv",header=TRUE)#, fileEncoding="UTF-16LE")
 mySpeciesdata <- N2000Species[which(N2000Species$SPGROUP=="Birds"),c(2,3,4,16)] # only bird species
 mySpeciesdata <- mySpeciesdata[which(mySpeciesdata$CONSERVATION=="A"|mySpeciesdata$CONSERVATION=="B"|mySpeciesdata$CONSERVATION=="C"),]       # remove Conservation Status = "NULL"
 
