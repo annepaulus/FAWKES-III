@@ -1,6 +1,6 @@
 #########################################
 #### Ordered logistic regression analysis for habitat Conservation status (ABC) against levers trajectories (4 summarized)
-#### 
+#### This is using the extracted values from Levers in 10km buffers around all SPAs
 #### inspiration for code found at https://stats.idre.ucla.edu/r/dae/ordinal-logistic-regression/
 #### Authors: MB, TV ...
 #########################################
