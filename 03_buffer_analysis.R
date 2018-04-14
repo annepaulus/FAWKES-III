@@ -21,7 +21,7 @@ perimeter<-list()
 
 pb <- txtProgressBar(min = 0, max = total, style = 3) # produces a progress bar
 for (i in 1:total){
-  subset <- Natura2000_shape[as.character(Natura2000_shape$SITECODE)==as.character(overlapSPA)[i],]
+  subset <- Natura2000_shape_all[as.character(Natura2000_shape_all$SITECODE)==as.character(overlapSPA)[i],]
   # takes each shapefile, if it is a SPA
   ACT_ext[[i]]<-extract(ACT,subset,weights=TRUE,normalizeWeights=TRUE)
   # extracts ACT rasterdata for each sitecode
@@ -39,7 +39,7 @@ close(pb)
 ###############################################################################
 
 # subset shapefile of 10 SPAs
-subset<-Natura2000_shape_all[1:10,]
+#subset<-Natura2000_shape_all[1:10,]
 subset<-Natura2000_shape_all
 #plot(subset, col="red", add=TRUE)    # only subset for now
 
@@ -62,9 +62,11 @@ for(i in 1:length(subset)){
 }
 close(pb)
 
+saveRDS(myBuffer, file = "myBuffer.rds")
 
-plot(ACT)
-plot(myBuffer[[1]], col="red", add=TRUE)
+
+#plot(ACT)
+plot(myBuffer[[4]], col="red")
 
 pb <- txtProgressBar(min = 0, max = total, style = 3) # produces a progress bar
 for (i in 1:length(myBuffer)){
@@ -126,60 +128,62 @@ for(k in 1:length(ACT_red)){
 results[is.na(results)]<-0
 results2 <- results[which(results$count>5),]
 
+saveRDS(results, file = "results_buffer.rds")
+
 
 
 ###############################################################################
 #                   DATA CLEANING                                             #
 ###############################################################################
 
-# get rid of NAs and compute class proportions
-
-ACT_red<-list()
-area_red<-list()
-
-for (i in 1:total){
-  if(is.null(ACT_ext[[i]][[1]])==TRUE) {
-    ACT_red[[i]]<-NA  
-    area_red[[i]]<-NA
-  }else{
-    if(isTRUE(unique(is.na(as.data.frame(ACT_ext[[i]])$value)))==TRUE){
-      ACT_red[[i]]<-NA  
-      area_red[[i]]<-NA
-    }else{
-      f.correct<-1/sum(as.data.frame(ACT_ext[[i]])[!is.na(as.data.frame(ACT_ext[[i]])[,1]),2])
-      reduced.na<-as.data.frame(ACT_ext[[i]])[!is.na(as.data.frame(ACT_ext[[i]])[,1]),]
-      reduced.na[,2]<-reduced.na[,2]*f.correct
-      ACT_red[[i]]<-reduced.na
-      area_red[[i]]<-area[[i]]*sum(as.data.frame(ACT_ext[[i]])[!is.na(as.data.frame(ACT_ext[[i]])[,1]),2])
-    }
-  }    
-}   
-
-
-
-# create a dataframe for presenting the distribution of SPA-area per ACT
-results <- as.data.frame(matrix(NA,length(ACT_red),20))
-colnames(results) <- c("SITECODE","area",paste("ACT",c(1:17),sep=""),"count")
-
-for(k in 1:length(ACT_red)){
-  results[k,1]<-as.character(overlapSPA)[k]
-  results[k,2]<-area_red[[k]]
-  
-  if(is.na(ACT_red[[k]])==TRUE){
-    results[k,3:19]<-NA
-  } else{
-    test.sum<-cbind(aggregate(weight~value,sum,data=ACT_red[[k]]),table(ACT_red[[k]]$value))
-    results[k,test.sum$value+2]<-test.sum$weight
-    results[k,20]<-sum(test.sum$Freq)
-    
-  }
-  print(k)
-}
+# # get rid of NAs and compute class proportions
+# 
+# ACT_red<-list()
+# area_red<-list()
+# 
+# for (i in 1:total){
+#   if(is.null(ACT_ext[[i]][[1]])==TRUE) {
+#     ACT_red[[i]]<-NA  
+#     area_red[[i]]<-NA
+#   }else{
+#     if(isTRUE(unique(is.na(as.data.frame(ACT_ext[[i]])$value)))==TRUE){
+#       ACT_red[[i]]<-NA  
+#       area_red[[i]]<-NA
+#     }else{
+#       f.correct<-1/sum(as.data.frame(ACT_ext[[i]])[!is.na(as.data.frame(ACT_ext[[i]])[,1]),2])
+#       reduced.na<-as.data.frame(ACT_ext[[i]])[!is.na(as.data.frame(ACT_ext[[i]])[,1]),]
+#       reduced.na[,2]<-reduced.na[,2]*f.correct
+#       ACT_red[[i]]<-reduced.na
+#       area_red[[i]]<-area[[i]]*sum(as.data.frame(ACT_ext[[i]])[!is.na(as.data.frame(ACT_ext[[i]])[,1]),2])
+#     }
+#   }    
+# }   
+# 
 
 
-
-results[is.na(results)]<-0
-results2 <- results[which(results$count>5),]
+# # create a dataframe for presenting the distribution of SPA-area per ACT
+# results <- as.data.frame(matrix(NA,length(ACT_red),20))
+# colnames(results) <- c("SITECODE","area",paste("ACT",c(1:17),sep=""),"count")
+# 
+# for(k in 1:length(ACT_red)){
+#   results[k,1]<-as.character(overlapSPA)[k]
+#   results[k,2]<-area_red[[k]]
+#   
+#   if(is.na(ACT_red[[k]])==TRUE){
+#     results[k,3:19]<-NA
+#   } else{
+#     test.sum<-cbind(aggregate(weight~value,sum,data=ACT_red[[k]]),table(ACT_red[[k]]$value))
+#     results[k,test.sum$value+2]<-test.sum$weight
+#     results[k,20]<-sum(test.sum$Freq)
+#     
+#   }
+#   print(k)
+# }
+# 
+# 
+# 
+# results[is.na(results)]<-0
+# results2 <- results[which(results$count>5),]
 
 ############################################################################
 ###       relate conservation status with ACT via bird species           ###
@@ -208,50 +212,24 @@ tabFinal$CONSERVATION<-CStatus
 #tabFinal<-tabFinal[-which(tabFinal$SPECIESNAME=="--NULL--"),]
 tabFinal$SPECIESNAME<-droplevels(tabFinal$SPECIESNAME)
 
-bird<-bird[1:511,2:4]
+bird<-bird[1:511,1:3]
 colnames(bird)<-c("SPECIESCODE","migration","preference")
 #bird <- bird[which(bird$migration=="mainly resident"),]
 
 tabFinal <- merge(tabFinal,bird, by="SPECIESCODE")
 #table(bird$SPECIESCODE)
 
-which(table(bird$SPECIESCODE)>1)
+#which(table(bird$SPECIESCODE)>1)
 
 #save.image(file = "FAWKES.RData")
 
 
 
-
+saveRDS(tabFinal, file = "tabFinal_buffer.rds")
 
 
 ############################################################################
 ### 
-############################################################################
-
-
-for (i in 1:length(dat$SPECIESCODE)){
-  
-  dat$ACT_dom[i]<-colnames(dat[i,8:11])[max.col(dat[i,8:11])]
-  
-}
-
-
-bird2<-reshape(aggregate (dat$ACT_dom, list(dat$SPECIESCODE,dat$ACT_dom), FUN=length), v.names="x", timevar="Group.2", idvar="Group.1", direction="wide")
-colnames(bird2)<-c("SPECIESCODE","Conversion", "De_intens" ,"Intens" ,"Stabil")
-bird<-merge(bird,bird2, by="SPECIESCODE")
-
-colnames(bird)<-c("SPECIESCODE", "migration"   ,"preference","Conversion", "De_intens" ,"Intens" ,"Stabil")
-
-for (i in 1:length(bird$SPECIESCODE)){
-  
-  bird$ACT_dom_dom[i]<-colnames(bird[i,4:7])[max.col(bird[i,4:7])]
-  
-}
-
-
-
-############################################################################
-### 6. correlations between Conservation status and ACTs
 ############################################################################
 
 
@@ -262,7 +240,228 @@ dat <- data.frame(tabFinal[,c(1:6,24)],
                   Stabil = c(tabFinal[,23]))
 
 tab <- merge(dat,bird, by="SPECIESCODE")
-View(dat)
+
+for (i in 1:length(dat$SPECIESCODE)){
+  
+  dat$ACT_dom[i]<-colnames(dat[i,8:11])[max.col(dat[i,8:11])]
+  
+}
+
+saveRDS(dat, file = "dat_buffer.rds")
+saveRDS(tab, file = "tab_buffer.rds")
+
+# 
+# 
+# bird2<-reshape(aggregate (dat$ACT_dom, list(dat$SPECIESCODE,dat$ACT_dom), FUN=length), v.names="x", timevar="Group.2", idvar="Group.1", direction="wide")
+# colnames(bird2)<-c("SPECIESCODE","Conversion", "De_intens" ,"Intens" ,"Stabil")
+# bird<-merge(bird,bird2, by="SPECIESCODE")
+# 
+# colnames(bird)<-c("SPECIESCODE", "migration"   ,"preference","Conversion", "De_intens" ,"Intens" ,"Stabil")
+# 
+# for (i in 1:length(bird$SPECIESCODE)){
+#   
+#   bird$ACT_dom_dom[i]<-colnames(bird[i,4:7])[max.col(bird[i,4:7])]
+#   
+# }
+
+
+############################################################################
+### Derichlet-Regression
+############################################################################
+
+### aggregation of data on either site or species level (both offer alternative ways to interpret the data)
+
+### Aggregate on site level. We'll keep 1 entry per site giving us the proportion of Levers trajectories ("int","ext","cc","stab") within each site as well as the proportion of conservation classes of ALL birds within each site (ABC) + area of site and levers pixel count
+
+sites<-unique(tab$SITECODE)
+mat_sites<-as.data.frame(matrix(NA,length(sites), 9))
+colnames(mat_sites)<-c("A","B","C","int","ext","cc","stab","area", "count")
+for(j in 1:length(sites)){
+  sub<-subset(tab,tab$SITECODE==sites[j])
+  prop.Cstat<-table(sub$CONSERVATION)/sum(table(sub$CONSERVATION))
+  mat_sites[j,1:3]<-prop.Cstat
+  mat_sites[j,4:7]<-sub[1,8:11]
+  mat_sites[j,8]<-sub[1,6]
+  mat_sites[j,9]<-sub[1,7] # count
+}
+
+### Aggregate on species level. We'll keep 1 entry per species giving us the proportion of Levers trajectories ("int","ext","cc","stab") the species encounters within all sites. This is done as a two-step aggregation: first for each site the species occurs in the majority trajectory is selected and second, these majority trajectories are summarized as proportions across all sites the species occurs in. In addition we have the proportion of conservation classes of that species within all sites (ABC).
+
+species<-unique(tab$SPECIESCODE)
+mat_bird<-as.data.frame(matrix(NA,length(species), 10))
+colnames(mat_bird)<-c("A","B","C","int","ext","cc","stab", "SPECIESCODE","migration","preference")
+for(j in 1:length(species)){
+  sub<-subset(tab,tab$SPECIESCODE==species[j])
+  lu_agg<-factor()
+  levels(lu_agg)<-c("Conversion","Stabil","De_intens","Intens")
+  
+  for(k in 1:length(sub$SPECIESCODE)){
+    lu_agg[k]<-names(which.max(sub[k,8:11]))
+  }
+  
+  mat_bird[j,4:7]<-table(lu_agg)/sum(table(lu_agg))
+  prop.Cstat<-table(sub$CONSERVATION)/sum(table(sub$CONSERVATION))
+  mat_bird[j,1:3]<-prop.Cstat
+  mat_bird[j,4:7]<-sub[1,8:11]
+  mat_bird[j,8]<-as.character(sub[1,1])
+  mat_bird[j,9]<-as.character(sub[1,12])
+  mat_bird[j,10]<-as.character(sub[1,13])
+}
+
+#remove all birds that have no levers data at all (~50)
+
+mat_bird<-mat_bird[rowSums((mat_bird[,4:7])==0)<=0,]
+
+### Site-based Drichlet analysis
+
+ABC_status <- DR_data(mat_sites[, 1:3])
+
+plot(ABC_status, cex = 0.5, a2d = list(colored = FALSE, c.grid = FALSE))
+
+plot(rep(mat_sites$int, 3), as.numeric(ABC_status), pch = 21,cex=0.2, bg = rep(c("#E495A5", "#86B875", "#7DB0DD"), each = 39), xlab = "intensity", ylab = "Proportion",ylim = 0:1)
+
+first_model <- DirichReg(ABC_status ~ mat_sites$int+mat_sites$cc+mat_sites$ext)
+summary(first_model)
+
+first_model <- DirichReg(ABC_status ~ mat_sites$int)
+
+plot(rep(mat_sites$int, 3), as.numeric(ABC_status), pch = 21,cex=0.2, bg = rep(c("#E495A5", "#86B875", "#7DB0DD"), each = 39), xlab = "intensity", ylab = "Proportion",ylim = 0:1)
+
+Xnew <- data.frame(int = seq(min(mat_sites$int), max(mat_sites$int),length.out = 100))
+for (i in 1:3) lines(cbind(Xnew, predict(first_model, Xnew)[, i]), col = c("#E495A5", "#86B875", "#7DB0DD")[i], lwd = 2)
+# 
+
+pre<-predict(first_model)
+
+plot(pre[,1]~mat_sites$int)
+plot(pre[,2]~mat_sites$int)
+plot(pre[,3]~mat_sites$int)
+
+boxplot(mat_sites[,1:3])
+
+### Species-based Drichlet analysis
+
+for (i in 1:length(mat_bird$SPECIESCODE)){
+  
+  mat_bird$ABC_dom[i]<-colnames(mat_bird[i,1:3])[max.col(mat_bird[i,1:3])]
+  
+}
+
+for (i in 1:length(tab$SPECIESCODE)){
+  
+  tab$ACT_dom[i]<-colnames(tab[i,8:11])[max.col(tab[i,8:11])]
+  
+}
+
+
+
+
+
+
+
+dat$cc_area<-dat$area*dat$Conversion
+dat$int_area<-dat$area*dat$Intens
+dat$ext_area<-dat$area*dat$De_intens
+dat$stab_area<-dat$area*dat$Stabil
+
+one_bird<-dat[dat$SPECIESCODE=="A030",]
+#head(one_bird)
+one_bird$country<-factor(substr((one_bird$SITECODE),1,2))
+#lapply(one_bird[, c("CONSERVATION","cc_area")], table)
+
+one_bird<-(one_bird[(rowSums((one_bird[,8:10]))==0)<=0,])
+
+m<-polr(formula=CONSERVATION~ACT_dom+area, data=one_bird,Hess=TRUE)
+ctable <- coef(summary(m))
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+ctable <- cbind(ctable, "p value" = p)
+ci <- confint(m)
+confint.default(m)
+exp(coef(m))
+exp(cbind(OR = coef(m), ci))
+
+summary(factor(one_bird$ACT_dom))
+
+ggplot(one_bird, aes(x = CONSERVATION, y = int_area)) +
+  geom_boxplot(size = .75) +
+  geom_jitter(alpha = .5) +
+  facet_grid(ACT_dom~country, margins = TRUE) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1))
+
+
+sf <- function(y) {
+  c('Y>=1' = qlogis(mean(y >= 1)),
+    'Y>=2' = qlogis(mean(y >= 2)),
+    'Y>=3' = qlogis(mean(y >= 3)))
+}
+
+s <- with(one_bird, summary(as.numeric(CONSERVATION) ~ ACT_dom + area, fun=sf))
+
+glm(I(as.numeric(CONSERVATION) >= 2) ~ ACT_dom, family="binomial", data = one_bird)
+glm(I(as.numeric(CONSERVATION) >= 3) ~ ACT_dom, family="binomial", data = one_bird)
+
+s[, 4] <- s[, 4] - s[, 3]
+s[, 3] <- s[, 3] - s[, 3]
+plot(s, which=1:3, pch=1:3, xlab='logit', main=' ', xlim=range(s[,3:4]))
+
+
+
+
+
+
+
+
+
+
+farmland_birds <- c("A247","A110", "A255", "A257", "A025", "A133", "A243","A366", "A031","A348",  "A377", "A376", "A379",
+                    "A382", "A096","A244","A245", "A251", "A338", "A339", "A341","A156","A242", "A383","A260","A278","A356",
+                    "A112","A357", "A275","A276", "A361","A210", "A352", "A351", "A309",  "A128", "A232", "A142")
+trends_farmland <- read.delim("trends_farmland.txt", header=FALSE)
+trends_farmland <- cbind(farmland_birds, trends_farmland)
+colnames(trends_farmland) <- c("Speciescode", "Speciesname", "Baseyear", "Trend")
+farmland_trends <- as.vector(trends_farmland$Trend)
+
+
+forest_birds <- c("A086", "A256", "A263", "A104", "A365", "A335", "A334", "A373", "A207", "A454", "A238", "A240",
+                  "A236", "A542", "A321", "A332", "A342", "A344", "A328", "A327", "A326", "A325",
+                  "A274", "A313", "A315", "A314", "A234", "A372", "A318", "A317", "A362", "A332", "A165", "A287")
+trends_forest <- read.delim("trends_forest.txt", header=FALSE)
+
+trends_forest <- cbind(forest_birds, trends_forest)
+colnames(trends_forest) <- c("Speciescode", "Speciesname", "Baseyear", "Trend")
+forest_trends <- as.vector(trends_forest$Trend)
+
+trends_all <- read.delim("trends_all.txt", header=FALSE)
+colnames(trends_all) <- c("SPECIESCODE", "Speciesname", "Baseyear", "Trend")
+
+trends_farmland$type<-"farmland"
+trends_forest$type<-"forest"
+trends<-rbind(trends_farmland,trends_forest)
+
+colnames(trends)[1]<-"SPECIESCODE"
+
+mat_bird$SPECIESCODE<-factor(mat_bird$SPECIESCODE)
+mat_bird_trends<-merge(mat_bird,trends,by="SPECIESCODE")
+
+summary(lme(C~int+cc+Trend, random= ~ 1|SPECIESCODE,data=mat_bird_trends))
+boxplot(A~Trend, data=mat_bird_trends)
+
+
+
+
+
+
+
+
+
+
+
+
+
+############################################################################
+### 6. correlations between Conservation status and ACTs
+############################################################################
+
 
 ###Describ. Stat.
 boxplot(dat[,8:11],col=c("darkred","red","lightgreen","green"))

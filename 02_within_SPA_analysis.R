@@ -2,45 +2,49 @@
 ### 02.1. overlay of SPAs with ACTs
 ############################################################################
 
-#plot(ACT)
-Natura2000_shape_all <- Natura2000_shape[which(as.character(sitecodes)%in%as.character(N2000SPASiteCodes)==T),]
-rm(Natura2000_shape) # frees 1.3 GB
-gc()
-
-# extract the ACTs, LSAs and area of the SPAs sitecode-wise
-total <- length(overlapSPA)       #5569 SPAs
-
-ACT_ext<-list()
-LSA_ext<-list()
-area<-list()
-perimeter<-list()
-
-# normalizeWeights==TRUE --> der Anteil der extrahierten Pixelfläche an der Gesamtfläche des Polygones
-# Problem hierbei: falls man im Nachhinein NAs rauswirft stimmen die Verhältnisse nicht mehr
-# normalizeWeights==FALSE --> der Anteil des extrahierten Pixels 
-
-# this loop will run for ca.60 minutes! ...go for lunch or for a walk ;o)
-
-pb <- txtProgressBar(min = 0, max = total, style = 3) # produces a progress bar
-for (i in 1:total){
-  subset <- Natura2000_shape_all[as.character(Natura2000_shape_all$SITECODE)==as.character(overlapSPA)[i],]
-  # takes each shapefile, if it is a SPA
-  ACT_ext[[i]]<-extract(ACT,subset,weights=TRUE,normalizeWeights=TRUE)
-  # extracts ACT rasterdata for each sitecode
-  area[[i]]<-gArea(subset)/1e+06
-  perimeter[[i]]<-gLength(subset)/1e+03
-  # extracts areal data for each sitecode
-  setTxtProgressBar(pb, i)
-}
-close(pb)
-
-saveRDS(ACT_ext, file = "ACT_ext.rds")
-saveRDS(area, file = "area.rds")
-saveRDS(perimeter, file = "perimeter.rds")
+# #plot(ACT)
+# Natura2000_shape_all <- Natura2000_shape[which(as.character(sitecodes)%in%as.character(N2000SPASiteCodes)==T),]
+# rm(Natura2000_shape) # frees 1.3 GB
+# gc()
+# 
+# # extract the ACTs, LSAs and area of the SPAs sitecode-wise
+# total <- length(overlapSPA)       #5569 SPAs
+# 
+# ACT_ext<-list()
+# LSA_ext<-list()
+# area<-list()
+# perimeter<-list()
+# 
+# # normalizeWeights==TRUE --> der Anteil der extrahierten Pixelfläche an der Gesamtfläche des Polygones
+# # Problem hierbei: falls man im Nachhinein NAs rauswirft stimmen die Verhältnisse nicht mehr
+# # normalizeWeights==FALSE --> der Anteil des extrahierten Pixels 
+# 
+# # this loop will run for ca.60 minutes! ...go for lunch or for a walk ;o)
+# 
+# pb <- txtProgressBar(min = 0, max = total, style = 3) # produces a progress bar
+# for (i in 1:total){
+#   subset <- Natura2000_shape_all[as.character(Natura2000_shape_all$SITECODE)==as.character(overlapSPA)[i],]
+#   # takes each shapefile, if it is a SPA
+#   ACT_ext[[i]]<-extract(ACT,subset,weights=TRUE,normalizeWeights=TRUE)
+#   # extracts ACT rasterdata for each sitecode
+#   area[[i]]<-gArea(subset)/1e+06
+#   perimeter[[i]]<-gLength(subset)/1e+03
+#   # extracts areal data for each sitecode
+#   setTxtProgressBar(pb, i)
+# }
+# close(pb)
+# 
+# saveRDS(ACT_ext, file = "ACT_ext.rds")
+# saveRDS(area, file = "area.rds")
+# saveRDS(perimeter, file = "perimeter.rds")
+# saveRDS(total, file = "total.rds")
+# saveRDS(overlapSPA, file = "overlapSPA.rds")
 
 ACT_ext<-readRDS(file = "ACT_ext.rds")
 area<-readRDS(file = "area.rds")
 perimeter<-readRDS(file = "perimeter.rds")
+total<-readRDS(file = "total.rds")
+overlapSPA<-readRDS(file = "overlapSPA.rds")
 
 #ACT_ext[[1]]
 
@@ -150,82 +154,154 @@ dat <- data.frame(tabFinal[,c(1:6,24)],
                   Stabil = c(tabFinal[,23]))
 
 tab <- merge(dat,bird, by="SPECIESCODE")
-View(dat)
+#View(dat)
 
 
+############################################################################
+### Derichlet-Regression
+############################################################################
 
-##################### Lisanne & Ron Derichlet-Regression ######################################
+### aggregation of data on either site or species level (both offer alternative ways to interpret the data)
+
+### Aggregate on site level. We'll keep 1 entry per site giving us the proportion of Levers trajectories ("int","ext","cc","stab") within each site as well as the proportion of conservation classes of ALL birds within each site (ABC) + area of site and levers pixel count
 
 sites<-unique(tab$SITECODE)
-mat<-as.data.frame(matrix(NA,length(sites), 9))
-colnames(mat)<-c("A","B","C","int","ext","cc","stab","area", "count")
+mat_sites<-as.data.frame(matrix(NA,length(sites), 9))
+colnames(mat_sites)<-c("A","B","C","int","ext","cc","stab","area", "count")
 for(j in 1:length(sites)){
   sub<-subset(tab,tab$SITECODE==sites[j])
   prop.Cstat<-table(sub$CONSERVATION)/sum(table(sub$CONSERVATION))
-  mat[j,1:3]<-prop.Cstat
-  mat[j,4:7]<-sub[1,8:11]
-  mat[j,8]<-sub[1,6]
-  mat[j,9]<-sub[1,7] # count
+  mat_sites[j,1:3]<-prop.Cstat
+  mat_sites[j,4:7]<-sub[1,8:11]
+  mat_sites[j,8]<-sub[1,6]
+  mat_sites[j,9]<-sub[1,7] # count
 }
 
-
-
+### Aggregate on species level. We'll keep 1 entry per species giving us the proportion of Levers trajectories ("int","ext","cc","stab") the species encounters within all sites. This is done as a two-step aggregation: first for each site the species occurs in the majority trajectory is selected and second, these majority trajectories are summarized as proportions across all sites the species occurs in. In addition we have the proportion of conservation classes of that species within all sites (ABC).
 
 species<-unique(tab$SPECIESCODE)
-mat_bird<-as.data.frame(matrix(NA,length(species), 8))
-colnames(mat_bird)<-c("A","B","C","int","ext","cc","stab", "SPECIESCODE")
+mat_bird<-as.data.frame(matrix(NA,length(species), 10))
+colnames(mat_bird)<-c("A","B","C","int","ext","cc","stab", "SPECIESCODE","migration","preference")
 for(j in 1:length(species)){
   sub<-subset(tab,tab$SPECIESCODE==species[j])
-  
   lu_agg<-factor()
   levels(lu_agg)<-c("Conversion","Stabil","De_intens","Intens")
   
-  for(k in 1:length(sub$SPECIESCODE)){
+    for(k in 1:length(sub$SPECIESCODE)){
     lu_agg[k]<-names(which.max(sub[k,8:11]))
-  }
+    }
   
   mat_bird[j,4:7]<-table(lu_agg)/sum(table(lu_agg))
-  
   prop.Cstat<-table(sub$CONSERVATION)/sum(table(sub$CONSERVATION))
   mat_bird[j,1:3]<-prop.Cstat
   mat_bird[j,4:7]<-sub[1,8:11]
   mat_bird[j,8]<-as.character(sub[1,1])
+  mat_bird[j,9]<-as.character(sub[1,12])
+  mat_bird[j,10]<-as.character(sub[1,13])
 }
 
 
+### Site-based Drichlet analysis
 
-mat
-
-require("DirichletReg")
-
-
-
-ABC_status <- DR_data(mat[, 1:3])
+ABC_status <- DR_data(mat_sites[, 1:3])
 
 plot(ABC_status, cex = 0.5, a2d = list(colored = FALSE, c.grid = FALSE))
 
-plot(rep(mat$int, 3), as.numeric(ABC_status), pch = 21,cex=0.2, bg = rep(c("#E495A5", "#86B875", "#7DB0DD"), each = 39), xlab = "intensity", ylab = "Proportion",ylim = 0:1)
+plot(rep(mat_sites$int, 3), as.numeric(ABC_status), pch = 21,cex=0.2, bg = rep(c("#E495A5", "#86B875", "#7DB0DD"), each = 39), xlab = "intensity", ylab = "Proportion",ylim = 0:1)
 
-first_model <- DirichReg(ABC_status ~ mat$int+mat$cc+mat$ext)
+first_model <- DirichReg(ABC_status ~ mat_sites$int+mat_sites$cc+mat_sites$ext)
 
-first_model <- DirichReg(ABC_status ~ mat$int)
+first_model <- DirichReg(ABC_status ~ mat_sites$int)
 
-plot(rep(mat$int, 3), as.numeric(ABC_status), pch = 21,cex=0.2, bg = rep(c("#E495A5", "#86B875", "#7DB0DD"), each = 39), xlab = "intensity", ylab = "Proportion",ylim = 0:1)
+plot(rep(mat_sites$int, 3), as.numeric(ABC_status), pch = 21,cex=0.2, bg = rep(c("#E495A5", "#86B875", "#7DB0DD"), each = 39), xlab = "intensity", ylab = "Proportion",ylim = 0:1)
 
-Xnew <- data.frame(int = seq(min(mat$int), max(mat$int),length.out = 100))
+Xnew <- data.frame(int = seq(min(mat_sites$int), max(mat_sites$int),length.out = 100))
 for (i in 1:3) lines(cbind(Xnew, predict(first_model, Xnew)[, i]), col = c("#E495A5", "#86B875", "#7DB0DD")[i], lwd = 2)
 # 
 
 pre<-predict(first_model)
 
-plot(pre[,1]~mat$int)
-plot(pre[,2]~mat$int)
-plot(pre[,3]~mat$int)
+plot(pre[,1]~mat_sites$int)
+plot(pre[,2]~mat_sites$int)
+plot(pre[,3]~mat_sites$int)
 
-boxplot(mat[,1:3])
+boxplot(mat_sites[,1:3])
 
-# modA<-lm(A~int+ext+cc+stab+area,data=mat)
-# summary(modA)
+
+### Species-based Drichlet analysis
+
+for (i in 1:length(mat_bird$SPECIESCODE)){
+  
+  mat_bird$ABC_dom[i]<-colnames(mat_bird[i,1:3])[max.col(mat_bird[i,1:3])]
+  
+}
+
+for (i in 1:length(tab$SPECIESCODE)){
+  
+  tab$ACT_dom[i]<-colnames(tab[i,8:11])[max.col(tab[i,8:11])]
+  
+}
+
+
+ABC_status <- DR_data(mat_bird[, 1:3])
+
+plot(ABC_status, cex = 0.5, a2d = list(colored = FALSE, c.grid = FALSE))
+
+plot(rep(mat_bird$int, 3), as.numeric(ABC_status), pch = 21,cex=0.7, bg = rep(c("#E495A5", "#86B875", "#7DB0DD"), each = 39), xlab = "intensity", ylab = "Proportion",ylim = 0:1)
+
+first_model <- DirichReg(ABC_status ~ mat_bird$int+mat_bird$cc+mat_bird$ext+mat_bird$migration+mat_bird$preference)
+summary(first_model)
+
+tab$CONSERVATION_unordered<-factor(tab$CONSERVATION, ordered=FALSE)
+modA<-lm(tab$CONSERVATION_unordered~ACT_dom+migration+preference,data=tab)
+summary(modA)
+
+str(tab)
+
+first_model <- DirichReg(ABC_status ~ mat_bird$ext)
+
+plot(rep(mat_bird$int, 3), as.numeric(ABC_status), pch = 21,cex=0.2, bg = rep(c("#E495A5", "#86B875", "#7DB0DD"), each = 39), xlab = "intensity", ylab = "Proportion",ylim = 0:1)
+
+Xnew <- data.frame(int = seq(min(mat_bird$int), max(mat_bird$int),length.out = 100))
+for (i in 1:3) lines(cbind(Xnew, predict(first_model, Xnew)[, i]), col = c("#E495A5", "#86B875", "#7DB0DD")[i], lwd = 2)
+# 
+
+pre<-predict(first_model)
+
+plot(pre[,1]~mat_bird$int)
+plot(pre[,2]~mat_bird$int)
+plot(pre[,3]~mat_bird$int)
+
+boxplot(mat_bird[,1:3])
+
+
+
+
+
+pom0 <- vglm(factor(CONSERVATION,levels = c("A","B","C"),ordered = TRUE)~1,data=tab[tab$preference=="open land carnivores",], family = cumulative(parallel=FALSE))
+pom <- vglm(factor(CONSERVATION,levels = c("A","B","C"),ordered = TRUE)~Conversion+Intens+De_intens+Stabil+migration,data=tab[tab$preference=="open land carnivores",], family = cumulative(parallel=FALSE)) 
+summary(pom)
+
+# R^2 Nagelkerke
+pom.ll <- logLik(pom)
+pom.ll
+p0.ll <- logLik(pom0)
+p0.ll
+pom.nagel <- as.vector((1 - exp((2/N) * (p0.ll - pom.ll)))/(1 - exp(p0.ll)^(2/N)))
+pom.nagel
+
+
+
+plot(pom)
+
+#### simple change vs no change
+
+mat_bird$change<-mat_bird$int+mat_bird$ext+mat_bird$cc
+mat_bird$change[mat_bird$change==1]<-NA
+mat_bird$change[mat_bird$change==0]<-NA
+
+modA<-lm(A~change+stab,data=mat_bird)
+summary(modA)
 # 
 # plot(C~ext,data=mat)
 
