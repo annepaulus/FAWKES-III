@@ -17,12 +17,20 @@ dat$stab_area<-dat$area*dat$Stabil
 bird_OR_results <- data.frame(unique(droplevels(dat$SPECIESCODE)),
 OR_int=seq(1:486),
 p_int=seq(1:486),
+LCI_OR_int=seq(1:486),
+UCI_OR_int=seq(1:486),
 OR_ext=seq(1:486),
 p_ext=seq(1:486),
+LCI_OR_ext=seq(1:486),
+UCI_OR_ext=seq(1:486),
 OR_cc=seq(1:486),
 p_cc=seq(1:486),
+LCI_OR_cc=seq(1:486),
+UCI_OR_cc=seq(1:486),
 OR_stab=seq(1:486),
 p_stab=seq(1:486),
+LCI_OR_stab=seq(1:486),
+UCI_OR_stab=seq(1:486),
 stringsAsFactors=FALSE)
 names(bird_OR_results)[1]<-"SPECIESCODE"
 
@@ -53,6 +61,8 @@ ci <- confint(m)
 #exp(coef(m))
 res<-exp(cbind(OR = coef(m), ci))
 bird_OR_results[i,2]<-res[1,1]
+bird_OR_results[i,4]<-res[1,2]
+bird_OR_results[i,5]<-res[1,3]
 bird_OR_results[i,3]<-ctable[1,4]
 
 #### De_intens models
@@ -70,8 +80,10 @@ tryCatch({
 #confint.default(m)
 #exp(coef(m))
 res<-exp(cbind(OR = coef(m), ci))
-bird_OR_results[i,4]<-res[1,1]
-bird_OR_results[i,5]<-ctable[1,4]
+bird_OR_results[i,6]<-res[1,1]
+bird_OR_results[i,8]<-res[1,2]
+bird_OR_results[i,9]<-res[1,3]
+bird_OR_results[i,7]<-ctable[1,4]
 
 #### Conversion models
 
@@ -88,8 +100,10 @@ tryCatch({
 #confint.default(m)
 #exp(coef(m))
 res<-exp(cbind(OR = coef(m), ci))
-bird_OR_results[i,6]<-res[1,1]
-bird_OR_results[i,7]<-ctable[1,4]
+bird_OR_results[i,10]<-res[1,1]
+bird_OR_results[i,12]<-res[1,2]
+bird_OR_results[i,13]<-res[1,3]
+bird_OR_results[i,11]<-ctable[1,4]
 
 #### Stabil models
 
@@ -106,8 +120,10 @@ tryCatch({
 #confint.default(m)
 #exp(coef(m))
 res<-exp(cbind(OR = coef(m), ci))
-bird_OR_results[i,8]<-res[1,1]
-bird_OR_results[i,9]<-ctable[1,4]
+bird_OR_results[i,14]<-res[1,1]
+bird_OR_results[i,16]<-res[1,2]
+bird_OR_results[i,17]<-res[1,3]
+bird_OR_results[i,15]<-ctable[1,4]
 
 }
 print(i)
@@ -132,8 +148,67 @@ res_summary<-res_summary[,-1]
 
 barplot(as.numeric(res_summary[,2]),names.arg=c(rownames(res_summary)), col=c("red","green"))
 
+##### Guy-inspired plot
+
+### intensification
+sub<-bird_OR_results[bird_OR_results$p_int<0.05,]
+sub<-sub[sub$UCI_OR_int<10000,]
+sub<-sub[sub$OR_int>0.00001,]
+
+sub<-sub[order(sub$OR_int),]
+sub$SPECIESCODE<-factor(sub$SPECIESCODE,levels=sub$SPECIESCODE)
+sub$SPECIESCODE<-droplevels(sub$SPECIESCODE)
+
+ggplot(sub[sub$OR_int<5,], aes(x = SPECIESCODE, y = OR_int)) +
+  geom_point(size = 4) +
+  geom_hline(yintercept=1)+
+  geom_errorbar(aes(ymax = UCI_OR_int, ymin = LCI_OR_int))
+
+### extensification
+
+sub<-bird_OR_results[bird_OR_results$p_ext<0.05,]
+sub<-sub[sub$UCI_OR_int<10000,]
+sub<-sub[sub$OR_ext>0.00001,]
+
+sub<-sub[order(sub$OR_ext),]
+sub$SPECIESCODE<-factor(sub$SPECIESCODE,levels=sub$SPECIESCODE)
+sub$SPECIESCODE<-droplevels(sub$SPECIESCODE)
+
+ggplot(sub[sub$OR_ext<10,], aes(x = SPECIESCODE, y = OR_ext)) +
+  geom_point(size = 4) +
+  geom_hline(yintercept=1)+
+  geom_errorbar(aes(ymax = UCI_OR_ext, ymin = LCI_OR_ext))
 
 
+### conversion
+
+sub<-bird_OR_results[bird_OR_results$p_cc<0.05,]
+sub<-sub[sub$UCI_OR_int<10000,]
+sub<-sub[sub$OR_cc>0.00001,]
+
+sub<-sub[order(sub$OR_cc),]
+sub$SPECIESCODE<-factor(sub$SPECIESCODE,levels=sub$SPECIESCODE)
+sub$SPECIESCODE<-droplevels(sub$SPECIESCODE)
+
+ggplot(sub[sub$OR_cc<10,], aes(x = SPECIESCODE, y = OR_cc)) +
+  geom_point(size = 4) +
+  geom_hline(yintercept=1)+
+  geom_errorbar(aes(ymax = UCI_OR_cc, ymin = LCI_OR_cc))
+
+### stable
+
+sub<-bird_OR_results[bird_OR_results$p_stab<0.05,]
+sub<-sub[sub$UCI_OR_int<10000,]
+sub<-sub[sub$OR_stab>0.00001,]
+
+sub<-sub[order(sub$OR_stab),]
+sub$SPECIESCODE<-factor(sub$SPECIESCODE,levels=sub$SPECIESCODE)
+sub$SPECIESCODE<-droplevels(sub$SPECIESCODE)
+
+ggplot(sub[sub$OR_stab<10,], aes(x = SPECIESCODE, y = OR_stab)) +
+  geom_point(size = 4) +
+  geom_hline(yintercept=1)+
+  geom_errorbar(aes(ymax = UCI_OR_stab, ymin = LCI_OR_stab))
 
 ########### RESTERAMPE ##############
 
