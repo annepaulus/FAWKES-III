@@ -12,9 +12,9 @@
     path2wd <- "/home/juro/git/FAWKES-III/" #MB
     path2temp <- "/home/juro/git/FAWKES-III/temp/" #MB
     
-  } else if (cn == "enter your name here"){
-    path2wd <- "/Users/..."
-    path2temp <- "/Users/...tmp/" 
+  } else if (cn == "emil-pc"){
+    path2wd <- "/home/emil/git/FAWKES-III"
+    path2temp <- "/home/emil/git/FAWKES-III/temp/" 
   }  
   return(list(path2temp,path2wd))
 }
@@ -33,10 +33,13 @@ needed_libs <- c("ggplot2",# For plotting
                  "rgeos", # dependency for rgdal
                  "letsR",
                  "foreign",
+                 "dismo",
                  #"ggplot",
                  "MASS",
                  "Hmisc",
                  "reshape2",
+                 "RCurl",
+                 "downloader",
                  "VGAM"
 )
 
@@ -65,7 +68,7 @@ setwd(path2temp)
 # } else {unzip("PublicNatura2000End2016_csv.zip")}
 
 if (file.exists("PublicNatura2000End2015_csv.zip")==FALSE){
-  download.file("https://www.dropbox.com/s/6ftt2v0epsclzg5/PublicNatura2000End2015_csv.zip?dl=1", "PublicNatura2000End2015_csv.zip", mode="wb")
+  download("https://www.dropbox.com/s/6ftt2v0epsclzg5/PublicNatura2000End2015_csv.zip?dl=1", "PublicNatura2000End2015_csv.zip")
   unzip("PublicNatura2000End2015_csv.zip")
 } else {unzip("PublicNatura2000End2015_csv.zip")}
 
@@ -83,7 +86,7 @@ mydata <- merge(mySpeciesdata, mySPAsites, by="SITECODE")
 ### load bird species lost and categories
 
 if (file.exists("bird_categorization.csv")==FALSE){
-  download.file("https://www.dropbox.com/s/bxf39frp982fe4z/bird%20categorization.csv?dl=1", "bird_categorization.csv", mode="wb")
+  download("https://www.dropbox.com/s/bxf39frp982fe4z/bird%20categorization.csv?dl=1", "bird_categorization.csv")
   bird<-read.csv("bird_categorization.csv",sep=";")
 } else {bird<-read.csv("bird_categorization.csv",sep=";")}
 
@@ -93,7 +96,7 @@ if (file.exists("bird_categorization.csv")==FALSE){
 ############################################################################
 
 if (file.exists("Archetypes_Levers_et_al_2015.zip")==FALSE){
-  download.file("https://www.dropbox.com/s/2qybuvj1balvcwo/Archetypes_Levers_et_al_2015.zip?dl=1", "Archetypes_Levers_et_al_2015.zip", mode="wb")
+  download("https://www.dropbox.com/s/2qybuvj1balvcwo/Archetypes_Levers_et_al_2015.zip?dl=1", "Archetypes_Levers_et_al_2015.zip")
   unzip("Archetypes_Levers_et_al_2015.zip")
 } else {unzip("Archetypes_Levers_et_al_2015.zip")}
 
@@ -110,7 +113,7 @@ values(ACT)[values(ACT) > 17] = NA       # there are only 17 categories: put all
 
 # load N2000 shapefile
 if (file.exists("Natura2000_end2016_Shapefile.zip")==FALSE){
-  download.file("https://www.dropbox.com/s/ckj83sfj1vcdznd/Natura2000_end2016_Shapefile.zip?dl=1", "Natura2000_end2016_Shapefile.zip", mode="wb")
+  download("https://www.dropbox.com/s/ckj83sfj1vcdznd/Natura2000_end2016_Shapefile.zip?dl=1", "Natura2000_end2016_Shapefile.zip")
   unzip("Natura2000_end2016_Shapefile.zip")
   } else {unzip("Natura2000_end2016_Shapefile.zip")}
 Natura2000_shape <- readOGR(dsn = ".", layer = "Natura2000_end2016") 
