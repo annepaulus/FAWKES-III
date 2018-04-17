@@ -13,7 +13,7 @@ dat$int_area<-dat$area*dat$Intens
 dat$ext_area<-dat$area*dat$De_intens
 dat$stab_area<-dat$area*dat$Stabil
 
-#### create new dataframe, each species  in one row
+#### create new dataframe, each species in one row
 bird_OR_results <- data.frame(unique(droplevels(dat$SPECIESCODE)),
 OR_int=seq(1:486),
 p_int=seq(1:486),

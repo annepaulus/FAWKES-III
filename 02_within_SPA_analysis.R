@@ -2,37 +2,37 @@
 ### 02.1. overlay of SPAs with ACTs
 ############################################################################
 
-# #plot(ACT)
-# Natura2000_shape_all <- Natura2000_shape[which(as.character(sitecodes)%in%as.character(N2000SPASiteCodes)==T),]
-# rm(Natura2000_shape) # frees 1.3 GB
-# gc()
-# 
-# # extract the ACTs, LSAs and area of the SPAs sitecode-wise
-# total <- length(overlapSPA)       #5569 SPAs
-# 
-# ACT_ext<-list()
-# LSA_ext<-list()
-# area<-list()
-# perimeter<-list()
-# 
-# # normalizeWeights==TRUE --> der Anteil der extrahierten Pixelfläche an der Gesamtfläche des Polygones
-# # Problem hierbei: falls man im Nachhinein NAs rauswirft stimmen die Verhältnisse nicht mehr
-# # normalizeWeights==FALSE --> der Anteil des extrahierten Pixels 
-# 
-# # this loop will run for ca.60 minutes! ...go for lunch or for a walk ;o)
-# 
-# pb <- txtProgressBar(min = 0, max = total, style = 3) # produces a progress bar
-# for (i in 1:total){
-#   subset <- Natura2000_shape_all[as.character(Natura2000_shape_all$SITECODE)==as.character(overlapSPA)[i],]
-#   # takes each shapefile, if it is a SPA
-#   ACT_ext[[i]]<-extract(ACT,subset,weights=TRUE,normalizeWeights=TRUE)
-#   # extracts ACT rasterdata for each sitecode
-#   area[[i]]<-gArea(subset)/1e+06
-#   perimeter[[i]]<-gLength(subset)/1e+03
-#   # extracts areal data for each sitecode
-#   setTxtProgressBar(pb, i)
-# }
-# close(pb)
+#plot(ACT)
+Natura2000_shape_all <- Natura2000_shape[which(as.character(sitecodes)%in%as.character(N2000SPASiteCodes)==T),]
+rm(Natura2000_shape) # frees 1.3 GB
+gc()
+
+# extract the ACTs, LSAs and area of the SPAs sitecode-wise
+total <- length(overlapSPA)       #5569 SPAs
+
+ACT_ext<-list()
+LSA_ext<-list()
+area<-list()
+perimeter<-list()
+
+# normalizeWeights==TRUE --> der Anteil der extrahierten Pixelfläche an der Gesamtfläche des Polygones
+# Problem hierbei: falls man im Nachhinein NAs rauswirft stimmen die Verhältnisse nicht mehr
+# normalizeWeights==FALSE --> der Anteil des extrahierten Pixels
+
+# this loop will run for ca.60 minutes! ...go for lunch or for a walk ;o)
+
+pb <- txtProgressBar(min = 0, max = total, style = 3) # produces a progress bar
+for (i in 1:total){
+  subset <- Natura2000_shape_all[as.character(Natura2000_shape_all$SITECODE)==as.character(overlapSPA)[i],]
+  # takes each shapefile, if it is a SPA
+  ACT_ext[[i]]<-extract(ACT,subset,weights=TRUE,normalizeWeights=TRUE)
+  # extracts ACT rasterdata for each sitecode
+  area[[i]]<-gArea(subset)/1e+06
+  perimeter[[i]]<-gLength(subset)/1e+03
+  # extracts areal data for each sitecode
+  setTxtProgressBar(pb, i)
+}
+close(pb)
 # 
 # saveRDS(ACT_ext, file = "ACT_ext.rds")
 # saveRDS(area, file = "area.rds")
@@ -129,8 +129,7 @@ tabFinal$CONSERVATION<-CStatus
 #tabFinal<-tabFinal[-which(tabFinal$SPECIESNAME=="--NULL--"),]
 tabFinal$SPECIESNAME<-droplevels(tabFinal$SPECIESNAME)
 
-bird<-bird[1:511,2:4]
-colnames(bird)<-c("SPECIESCODE","migration","preference")
+
 #bird <- bird[which(bird$migration=="mainly resident"),]
 
 tabFinal <- merge(tabFinal,bird, by="SPECIESCODE")
