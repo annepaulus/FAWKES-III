@@ -163,7 +163,16 @@ par(mar=c(10,3,3,3))
 barplot(as.numeric(res_summary[,2]),names.arg=c(rownames(res_summary)), col=c("red","green"), las=2, main="full model: inside and buffer")
 
 bird_OR_results<-merge(bird_OR_results,bird, by = "SPECIESCODE")
-bird_pref<-unique(bird_OR_results$preference)
+
+### reduce bird groups
+
+levels(bird_OR_results$preference)[levels(bird_OR_results$preference)=="woodland herbivores"]<-"woodland species"
+levels(bird_OR_results$preference)[levels(bird_OR_results$preference)=="woodland carnivores"]<-"woodland species"
+
+levels(bird_OR_results$preference)[levels(bird_OR_results$preference)=="open land herbivores"]<-"open land species"
+levels(bird_OR_results$preference)[levels(bird_OR_results$preference)=="open land carnivores"]<-"open land species"
+
+bird_pref<-levels(bird_OR_results$preference)
 
 for (i in 1:length(bird_pref)){
   sub_bird<-bird_OR_results[bird_OR_results$preference==bird_pref[i],]
