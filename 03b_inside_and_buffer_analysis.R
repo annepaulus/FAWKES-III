@@ -222,6 +222,9 @@ for (i in 1:length(dat_buffer$SPECIESCODE)){
 saveRDS(dat_buffer, file = "dat_inner_buffer.rds")
 saveRDS(tab_buffer, file = "tab_inner_buffer.rds")
 
+dat_buffer<-readRDS(file = "dat_inner_buffer.rds")
+tab_buffer<-readRDS(file = "tab_inner_buffer.rds")
+
 # 
 # 
 # bird2<-reshape(aggregate (dat$ACT_dom, list(dat$SPECIESCODE,dat$ACT_dom), FUN=length), v.names="x", timevar="Group.2", idvar="Group.1", direction="wide")
