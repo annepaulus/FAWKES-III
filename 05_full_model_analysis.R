@@ -50,6 +50,7 @@ bird_OR_results <- data.frame(unique(droplevels(dat_buffer$SPECIESCODE)),
                               
                               stringsAsFactors=FALSE)
 names(bird_OR_results)[1]<-"SPECIESCODE"
+bird_OR_results[1:486,2:17]<-NA
 
 #### loop running individual models for all bird species
 for (i in 1:length(bird_OR_results$SPECIESCODE)){
@@ -69,6 +70,9 @@ for (i in 1:length(bird_OR_results$SPECIESCODE)){
     tryCatch({
       ctable <- coef(summary(m))
     }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+    
+    if(length(rownames(ctable))<11) next # skip 3rd iteration and go to next iteration
+    
     p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
     ctable <- cbind(ctable, "p value" = p)
     
@@ -78,7 +82,7 @@ for (i in 1:length(bird_OR_results$SPECIESCODE)){
     #confint.default(m)
     #exp(coef(m))
     tryCatch({
-    res<-exp(cbind(OR = coef(m), ci))
+    res<-exp(cbind(OR = coef(m)))
     }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
     bird_OR_results[i,2]<-res[1,1]
     bird_OR_results[i,3]<-ctable[1,4]
@@ -156,7 +160,7 @@ res_summary<-rbind(Int_crop_neg,Int_crop_pos,Ext_crop_neg,Ext_crop_pos,Ext_pastu
 res_summary<-res_summary[,-1]
 
 par(mar=c(10,3,3,3))
-barplot(as.numeric(res_summary[,2]),names.arg=c(rownames(res_summary)), col=c("red","green"), las=2, main="inside and buffer")
+barplot(as.numeric(res_summary[,2]),names.arg=c(rownames(res_summary)), col=c("red","green"), las=2, main="full model: inside and buffer")
 
 bird_OR_results<-merge(bird_OR_results,bird, by = "SPECIESCODE")
 bird_pref<-unique(bird_OR_results$preference)
@@ -201,9 +205,9 @@ for (i in 1:length(bird_pref)){
   res_summary<-rbind(Int_crop_neg,Int_crop_pos,Ext_crop_neg,Ext_crop_pos,Ext_pasture_neg,Ext_pasture_pos,Int_wood_neg,Int_wood_pos, Cropland_loss_neg,Cropland_loss_pos,Forest_gain_neg,Forest_gain_pos,Forest_loss_neg,Forest_loss_pos,Urban_neg,Urban_pos,stab_neg,stab_pos)
   
   res_summary<-res_summary[,-1]
-  png(gsub("[[:punct:]]", " ", paste(bird_pref[i],"inside and buffer SPAs.png")))
+  png(gsub("[[:punct:]]", " ", paste(bird_pref[i],"full model inside and buffer SPAs.png")))
   par(mar=c(10,3,3,3))
-  barplot(as.numeric(res_summary[,2]),names.arg=c(rownames(res_summary)), col=c("red","green"), las=2, main=paste(bird_pref[i],"inside and outside SPAs"))
+  barplot(as.numeric(res_summary[,2]),names.arg=c(rownames(res_summary)), col=c("red","green"), las=2, main=paste(bird_pref[i],"full model: inside and outside SPAs"))
   dev.off()
   
 }
