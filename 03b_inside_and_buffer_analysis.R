@@ -86,7 +86,7 @@ results[is.na(results)]<-0
 #results2 <- results[which(results$count>5),]
 
 saveRDS(results, file = "results_inner_buffer.rds")
-
+results<- readRDS(file = "results_inner_buffer.rds")
 
 
 ###############################################################################
@@ -183,6 +183,7 @@ tabFinal_buffer <- merge(tabFinal,bird, by="SPECIESCODE")
 
 
 saveRDS(tabFinal, file = "tabFinal_inner_buffer.rds")
+tabFinal<- readRDS(file = "tabFinal_inner_buffer.rds")
 
 
 ############################################################################
@@ -221,6 +222,9 @@ for (i in 1:length(dat_buffer$SPECIESCODE)){
 
 saveRDS(dat_buffer, file = "dat_inner_buffer.rds")
 saveRDS(tab_buffer, file = "tab_inner_buffer.rds")
+
+dat_buffer<- readRDS(file = "dat_inner_buffer.rds")
+tab_buffer<-readRDS(file = "tab_inner_buffer.rds")
 
 # 
 # 
@@ -644,7 +648,17 @@ par(mar=c(10,3,3,3))
 barplot(as.numeric(res_summary[,2]),names.arg=c(rownames(res_summary)), col=c("red","green"), las=2, main="inside and buffer")
 
 bird_OR_results<-merge(bird_OR_results,bird, by = "SPECIESCODE")
-bird_pref<-unique(bird_OR_results$preference)
+
+### reduce bird groups
+
+levels(bird_OR_results$preference)[levels(bird_OR_results$preference)=="woodland herbivores"]<-"woodland species"
+levels(bird_OR_results$preference)[levels(bird_OR_results$preference)=="woodland carnivores"]<-"woodland species"
+
+levels(bird_OR_results$preference)[levels(bird_OR_results$preference)=="open land herbivores"]<-"open land species"
+levels(bird_OR_results$preference)[levels(bird_OR_results$preference)=="open land carnivores"]<-"open land species"
+
+bird_pref<-levels(bird_OR_results$preference)
+
 
 for (i in 1:length(bird_pref)){
   sub_bird<-bird_OR_results[bird_OR_results$preference==bird_pref[i],]
