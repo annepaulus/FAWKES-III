@@ -48,9 +48,11 @@ bird_OR_results <- data.frame(unique(droplevels(dat_buffer$SPECIESCODE)),
                               OR_Urban=seq(1:486),
                               p_Urban=seq(1:486),
                               
+                              r2_Nagel=seq(1:486),
+                              
                               stringsAsFactors=FALSE)
 names(bird_OR_results)[1]<-"SPECIESCODE"
-bird_OR_results[1:486,2:17]<-NA
+bird_OR_results[1:486,2:18]<-NA
 
 #### loop running individual models for all bird species
 for (i in 1:length(bird_OR_results$SPECIESCODE)){
@@ -58,20 +60,38 @@ for (i in 1:length(bird_OR_results$SPECIESCODE)){
   one_bird<-(one_bird[(rowSums((one_bird[,11:19]))==0)<=0,])
   
   # skip all species that occur in less than 5 SPAs
-  if (nrow(one_bird) < 5){
+  if (nrow(one_bird) < 30){
     bird_OR_results[i,2:9]<-NA
   } else {
     
     #### models
     
     tryCatch({
-      m<-polr(formula=factor(one_bird$CONSERVATION,levels = c("C","B","A"),ordered = TRUE)~Int_crop+Ext_crop+Ext_pasture+Int_wood+Cropland_loss+Forest_gain+Forest_loss+Urban+area, data=one_bird,Hess=TRUE)
+     m<-polr(formula=factor(one_bird$CONSERVATION,levels = c("C","B","A"),ordered = TRUE)~sqrt(Int_crop)+sqrt(Ext_crop)+sqrt(Ext_pasture)+sqrt(Int_wood)+sqrt(Cropland_loss)+sqrt(Forest_gain)+sqrt(Forest_loss)+sqrt(Urban)+area, data=one_bird,Hess=TRUE)
+     
+     m0<-polr(formula=factor(one_bird$CONSERVATION,levels = c("C","B","A"),ordered = TRUE)~1, data=one_bird,Hess=TRUE)
+      
+     # m <- vglm(factor(one_bird$CONSERVATION,levels = c("A","B","C"),ordered = TRUE)~Int_crop+Ext_crop+Ext_pasture+Int_wood+Cropland_loss+Forest_gain+Forest_loss+Urban+area, data=one_bird, family = cumulative(parallel=TRUE)) 
+      
+     
+     m.ll <- logLik(m)
+     #m.ll
+     
+     m0.ll <- logLik(m0)
+   #  m0.ll
+     
+     # R^2 Nagelkerke
+     N <- length(one_bird[, 1])  # Anzahl der F?lle
+     m.nagel <- as.vector((1 - exp((2/N) * (m0.ll - m.ll)))/(1 - exp(m0.ll)^(2/N)))
+    # m.nagel
+     
+     
     }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
     tryCatch({
       ctable <- coef(summary(m))
     }, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
     
-    if(length(rownames(ctable))<11) next # skip 3rd iteration and go to next iteration
+    if(length(rownames(ctable))<11) next 
     
     p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
     ctable <- cbind(ctable, "p value" = p)
@@ -108,6 +128,8 @@ for (i in 1:length(bird_OR_results$SPECIESCODE)){
     bird_OR_results[i,16]<-res[8,1]
     bird_OR_results[i,17]<-ctable[8,4]
     
+    bird_OR_results[i,18]<-m.nagel
+    
   }
   print(i)
 }
@@ -118,19 +140,19 @@ bird_OR_results<-readRDS(file = "bird_OR_results_inner_buffer_full_model.rds")
 
 #### results summary & plot
 
-int_neg<-summary((bird_OR_results$OR_int<1 & bird_OR_results$p_int<0.05))
-int_pos<-summary((bird_OR_results$OR_int>1 & bird_OR_results$p_int<0.05))
-
-ext_neg<-summary((bird_OR_results$OR_ext<1 & bird_OR_results$p_ext<0.05))
-ext_pos<-summary((bird_OR_results$OR_ext>1 & bird_OR_results$p_ext<0.05))
-
-cc_neg<-summary((bird_OR_results$OR_cc<1 & bird_OR_results$p_cc<0.05))
-cc_pos<-summary((bird_OR_results$OR_cc>1 & bird_OR_results$p_cc<0.05))
+# int_neg<-summary((bird_OR_results$OR_int<1 & bird_OR_results$p_int<0.05))
+# int_pos<-summary((bird_OR_results$OR_int>1 & bird_OR_results$p_int<0.05))
+# 
+# ext_neg<-summary((bird_OR_results$OR_ext<1 & bird_OR_results$p_ext<0.05))
+# ext_pos<-summary((bird_OR_results$OR_ext>1 & bird_OR_results$p_ext<0.05))
+# 
+# cc_neg<-summary((bird_OR_results$OR_cc<1 & bird_OR_results$p_cc<0.05))
+# cc_pos<-summary((bird_OR_results$OR_cc>1 & bird_OR_results$p_cc<0.05))
 
 stab_neg<-summary((bird_OR_results$OR_stab<1 & bird_OR_results$p_stab<0.05))
 stab_pos<-summary((bird_OR_results$OR_stab>1 & bird_OR_results$p_stab<0.05))
 
-Int_crop_neg<-summary((bird_OR_results$OR_Int_crop<1 & bird_OR_results$p_Int_crop<0.05))
+Int_crop_neg<-summary((bird_OR_results$OR_Int_crop<1 & bird_OR_results$p_Int_crop<0.05)) # & bird_OR_results$r2_Nagel>0.1
 Int_crop_pos<-summary((bird_OR_results$OR_Int_crop>1 & bird_OR_results$p_Int_crop<0.05))
 
 Ext_crop_neg<-summary((bird_OR_results$OR_Ext_crop<1 & bird_OR_results$p_Ext_crop<0.05))

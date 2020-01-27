@@ -31,7 +31,7 @@ needed_libs <- c("ggplot2",# For plotting
                  "raster",# for adding map data
                  "rgdal", # for loading map data
                  "rgeos", # dependency for rgdal
-                 "letsR",
+                 #"letsR",
                  "foreign",
                  "dismo",
                  "MASS",
@@ -40,7 +40,6 @@ needed_libs <- c("ggplot2",# For plotting
                  "RCurl",
                  "downloader",
                  "VGAM",
-                 "ggplot",
                  "DirichletReg",
                  "plotrix",
                  "ggthemes"
@@ -117,13 +116,13 @@ values(ACT)[values(ACT) > 17] = NA       # there are only 17 categories: put all
 #plot(ACT)
 #hist(ACT)
 
-# load N2000 shapefile
-if (file.exists("Natura2000_end2016_Shapefile.zip")==FALSE){
-  download.file("https://www.dropbox.com/s/ckj83sfj1vcdznd/Natura2000_end2016_Shapefile.zip?dl=1", "Natura2000_end2016_Shapefile.zip", mode="wb")
-  unzip("Natura2000_end2016_Shapefile.zip")
-  } else {unzip("Natura2000_end2016_Shapefile.zip")}
-Natura2000_shape <- readOGR(dsn = ".", layer = "Natura2000_end2016")
-sitecodes <- Natura2000_shape$SITECODE
+ # load N2000 shapefile
+ if (file.exists("Natura2000_end2016_Shapefile.zip")==FALSE){
+   download.file("https://www.dropbox.com/s/ckj83sfj1vcdznd/Natura2000_end2016_Shapefile.zip?dl=1", "Natura2000_end2016_Shapefile.zip", mode="wb")
+   unzip("Natura2000_end2016_Shapefile.zip")
+   } else {unzip("Natura2000_end2016_Shapefile.zip")}
+ Natura2000_shape <- readOGR(dsn = ".", layer = "Natura2000_end2016")
+ sitecodes <- Natura2000_shape$SITECODE
 
 # subset N2000 dataset to use only SPAs and "both" (i.e. only those sites that are focusing on bird conservation)
 N2000SPASiteCodes <- subset(N2000Sites$SITECODE,N2000Sites$SITETYPE=="A"|N2000Sites$SITETYPE=="C")  # 5572 sitecodes
