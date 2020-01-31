@@ -711,3 +711,4 @@ ggplot(sub[sub$OR_stab<10,], aes(x = SPECIESCODE, y = OR_stab)) +
   geom_point(size = 4) +
   geom_hline(yintercept=1)+
   geom_errorbar(aes(ymax = UCI_OR_stab, ymin = LCI_OR_stab))
+

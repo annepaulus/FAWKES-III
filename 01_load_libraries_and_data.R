@@ -34,6 +34,7 @@ needed_libs <- c("ggplot2",# For plotting
                  #"letsR",
                  "foreign",
                  "dismo",
+                 "nlme",
                  "MASS",
                  "Hmisc",
                  "reshape2",
@@ -135,7 +136,7 @@ length(N2000SPASiteCodes)-length(overlapSPA)
 ### 01.5. Re-load previous workspace
 ############################################################################
 
-#load("FAWKES.RData")
+load("FAWKES.RData")
 # ACT_ext<-readRDS(file = "ACT_ext.rds")
 # area<-readRDS(file = "area.rds")
 # perimeter<-readRDS(file = "perimeter.rds")
