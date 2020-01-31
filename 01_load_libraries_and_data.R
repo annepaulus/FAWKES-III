@@ -12,7 +12,7 @@
     path2wd <- "/home/juro/git/FAWKES-III/" #MB
     path2temp <- "/home/juro/git/FAWKES-III/temp/" #MB
     
-  } else if (cn == "emil-pc"){
+  } else if (cn == "emil-MS-7B45"){
     path2wd <- "/home/emil/git/FAWKES-III"
     path2temp <- "/home/emil/git/FAWKES-III/temp/" 
   }  
